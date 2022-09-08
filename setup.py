@@ -12,7 +12,6 @@ setup (
     name = 'pycbc-bbhx',
     version = VERSION,
     description = 'Plugin of BBHX fast TDI waveform generator into PyCBC',
-    long_description = open('descr.rst').read(),
     author = 'Connor Weaving',
     author_email = 'connor.weaving@port.ac.uk',
     url = 'http://www.pycbc.org/',
