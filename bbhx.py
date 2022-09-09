@@ -4,7 +4,7 @@ from pycbc import pnutils, conversions
 
 from bbhx.waveformbuild import BBHWaveformFD
 
-def bbhx_gen(run_phenomd=True, nyquist_freq=0.1,
+def bbhx_fd(run_phenomd=True, nyquist_freq=0.1,
                             sample_points=None, **params):
     # Some of this could go into waveform.py eventually.
     # Is it slow to do this every time?? Does it need caching??

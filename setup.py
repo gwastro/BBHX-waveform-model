@@ -19,7 +19,7 @@ setup (
     keywords = ['pycbc', 'signal processing', 'gravitational waves'],
     install_requires = ['pycbc'],
     py_modules = ['bbhx'],
-    entry_points = {"pycbc.waveform.fd":"bbhx=bbhx:bbhx_gen"},
+    entry_points = {"pycbc.waveform.fd":"bbhx=bbhx:bbhx_fd"},
     classifiers=[
         'Programming Language :: Python',
         'Programming Language :: Python :: 3.8',
