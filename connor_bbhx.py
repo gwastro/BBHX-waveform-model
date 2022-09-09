@@ -1,11 +1,14 @@
-import numpy as np
-from pycbc.types import FrequencySeries, Array
-from pycbc import pnutils, conversions
 
-from bbhx.waveformbuild import BBHWaveformFD
-
-def bbhx_fd(run_phenomd=True, nyquist_freq=0.1,
+def connor_bbhx_fd(run_phenomd=True, nyquist_freq=0.1,
                             sample_points=None, **params):
+
+    import numpy as np
+    from pycbc.types import FrequencySeries, Array
+    from pycbc import pnutils, conversions
+
+    from bbhx.waveformbuild import BBHWaveformFD
+
+
     # Some of this could go into waveform.py eventually.
     # Is it slow to do this every time?? Does it need caching??
     wave_gen = BBHWaveformFD(amp_phase_kwargs=dict(run_phenomd=run_phenomd))

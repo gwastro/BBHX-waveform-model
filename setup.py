@@ -9,7 +9,7 @@ from setuptools import find_packages
 VERSION = '0.0.dev0'
 
 setup (
-    name = 'pycbc-bbhx',
+    name = 'connor-bbhx-plugin',
     version = VERSION,
     description = 'Plugin of BBHX fast TDI waveform generator into PyCBC',
     author = 'Connor Weaving',
@@ -18,8 +18,8 @@ setup (
     download_url = 'https://github.com/ConWea/BBHX-waveform-model/v%s' % VERSION,
     keywords = ['pycbc', 'signal processing', 'gravitational waves'],
     install_requires = ['pycbc'],
-    py_modules = ['bbhx'],
-    entry_points = {"pycbc.waveform.fd":"bbhx=bbhx:bbhx_fd"},
+    py_modules = ['connor_bbhx'],
+    entry_points = {"pycbc.waveform.fd":"connor_bbhx=connor_bbhx:connor_bbhx_fd"},
     classifiers=[
         'Programming Language :: Python',
         'Programming Language :: Python :: 3.8',
