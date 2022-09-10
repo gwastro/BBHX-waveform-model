@@ -1,5 +1,4 @@
-
-def connor_bbhx_fd(run_phenomd=True, nyquist_freq=0.1,
+def bbhx_fd(run_phenomd=True, nyquist_freq=0.1,
                             sample_points=None, **params):
 
     import numpy as np
