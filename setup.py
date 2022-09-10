@@ -18,13 +18,9 @@ setup (
     download_url = 'https://github.com/ConWea/BBHX-waveform-model/v%s' % VERSION,
     keywords = ['pycbc', 'signal processing', 'gravitational waves', 'lisa'],
     install_requires = ['pycbc'],
-<<<<<<< HEAD
     py_modules = ['BBHX_PhenomD'],
     entry_points = {"pycbc.waveform.fd_det_sequence":"BBHX_PhenomD=BBHX_PhenomD:bbhx_fd"},
-=======
-    py_modules = ['connor_bbhx'],
-    entry_points = {"pycbc.waveform.fd_sequence":"connor_bbhx=connor_bbhx:connor_bbhx_fd"},
->>>>>>> 5f92f9c8fb41a1fbf5812fdd034452de769e1c5e
+
     classifiers=[
         'Programming Language :: Python',
         'Programming Language :: Python :: 3.8',
