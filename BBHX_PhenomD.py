@@ -1,4 +1,4 @@
-def bbhx_fd(run_phenomd=True, nyquist_freq=0.1,
+def bbhx_fd(tdi_channel, run_phenomd=True, nyquist_freq=0.1,
                             sample_points=None, **params):
 
     import numpy as np
@@ -48,20 +48,29 @@ def bbhx_fd(run_phenomd=True, nyquist_freq=0.1,
                     t_obs_end=t_obs_end,
                     shift_t_limits=shift_t_limits)[0]
 
+    wanted = {}
+
+    if 'LISA_A' == tdi_channel:
+        wanted['LISA_A'] = 0
+    if 'LISA_E' == tdi_channel:
+        wanted['LISA_E'] = 1
+    if 'LISA_T' == tdi_channel:
+        wanted['LISA_T'] = 2
+
+    output = {}
     # Convert outputs to PyCBC arrays
     if sample_points is None:
         # If wave[i] was converted to the time-domain, where would the
         # merger be within the timeseries (at end? at start?). This is a weird
         # convention in BBHX, and is not trivial!
-        # FIXME: This has not been tested for relative_binning, and
-        # may not (probably won't) work there!
         length_of_wave = 1. / params['delta_f']
         # I don't know why this is what it is.
         loc_of_signal_merger_within_wave = t_ref % length_of_wave
-        output = [FrequencySeries(wave[i], delta_f=params['delta_f'],
+
+        for channel, tdi_num in wanted.items():
+            output[channel] = FrequencySeries(wave[tdi_num], delta_f=params['delta_f'],
                                   epoch=params['tc'] - loc_of_signal_merger_within_wave)
-                  for i in range(3)]
     else:
-        output = [Array(wave[i]) for i in range(3)]
-    # return just A and E
+        for channel, tdi_num in wanted.items():
+            output[channel] = Array(wave[tdi_num])
     return output
