@@ -1,5 +1,9 @@
-def bbhx_fd(tdi_channel, run_phenomd=True, nyquist_freq=0.1,
+def bbhx_fd(ifos=None, run_phenomd=True, nyquist_freq=0.1,
                             sample_points=None, **params):
+
+
+    if ifos is None:
+        raise Exception("Must define data streams to compute")
 
     import numpy as np
     from pycbc.types import FrequencySeries, Array
@@ -50,11 +54,11 @@ def bbhx_fd(tdi_channel, run_phenomd=True, nyquist_freq=0.1,
 
     wanted = {}
 
-    if 'LISA_A' == tdi_channel:
+    if 'LISA_A' in ifos:
         wanted['LISA_A'] = 0
-    if 'LISA_E' == tdi_channel:
+    if 'LISA_E' in ifos:
         wanted['LISA_E'] = 1
-    if 'LISA_T' == tdi_channel:
+    if 'LISA_T' in ifos:
         wanted['LISA_T'] = 2
 
     output = {}
