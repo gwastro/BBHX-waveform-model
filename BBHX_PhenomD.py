@@ -11,7 +11,6 @@ def bbhx_fd(ifos=None, run_phenomd=True, nyquist_freq=0.1,
 
     from bbhx.waveformbuild import BBHWaveformFD
 
-
     # Some of this could go into waveform.py eventually.
     # Is it slow to do this every time?? Does it need caching??
     wave_gen = BBHWaveformFD(amp_phase_kwargs=dict(run_phenomd=run_phenomd))
@@ -64,11 +63,7 @@ def bbhx_fd(ifos=None, run_phenomd=True, nyquist_freq=0.1,
     output = {}
     # Convert outputs to PyCBC arrays
     if sample_points is None:
-        # If wave[i] was converted to the time-domain, where would the
-        # merger be within the timeseries (at end? at start?). This is a weird
-        # convention in BBHX, and is not trivial!
         length_of_wave = 1. / params['delta_f']
-        # I don't know why this is what it is.
         loc_of_signal_merger_within_wave = t_ref % length_of_wave
 
         for channel, tdi_num in wanted.items():
