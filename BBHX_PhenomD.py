@@ -1,7 +1,6 @@
 def bbhx_fd(ifos=None, run_phenomd=True, nyquist_freq=0.1,
                             sample_points=None, **params):
 
-
     if ifos is None:
         raise Exception("Must define data streams to compute")
 
