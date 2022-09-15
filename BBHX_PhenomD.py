@@ -4,6 +4,9 @@ def bbhx_fd(ifos=None, run_phenomd=True, nyquist_freq=0.1,
     if ifos is None:
         raise Exception("Must define data streams to compute")
 
+    if params['delta_f'] is None:
+        raise Exception("Must provide delta_f as an input parameter")
+
     import numpy as np
     from pycbc.types import FrequencySeries, Array
     from pycbc import pnutils, conversions
@@ -30,8 +33,6 @@ def bbhx_fd(ifos=None, run_phenomd=True, nyquist_freq=0.1,
         freqs = np.arange(0, nyquist_freq, params['delta_f'])
     else:
         freqs = sample_points
-        # FIXME: Must not hardcode this here!!
-        params['delta_f'] = 1E-8
     modes = [(2,2)] # More modes if not phenomd
     direct = False # See the BBHX documentation
     fill = True # See the BBHX documentation
