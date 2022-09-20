@@ -4,12 +4,9 @@ def bbhx_fd(ifos=None, run_phenomd=True, nyquist_freq=0.1,
     if ifos is None:
         raise Exception("Must define data streams to compute")
 
-    if params['delta_f'] is None:
-        raise Exception("Must provide delta_f as an input parameter")
-
     import numpy as np
     from pycbc.types import FrequencySeries, Array
-    from pycbc import pnutils, conversions
+    from pycbc import pnutils
 
     from bbhx.waveformbuild import BBHWaveformFD
 
@@ -30,7 +27,8 @@ def bbhx_fd(ifos=None, run_phenomd=True, nyquist_freq=0.1,
     psi = params['polarization']
     t_ref = params['tc']
     if sample_points is None:
-        freqs = np.arange(0, nyquist_freq, params['delta_f'])
+        print(1/params['t_obs_start'])
+        freqs = np.arange(0, nyquist_freq, 1/params['t_obs_start'])
     else:
         freqs = sample_points
     modes = [(2,2)] # More modes if not phenomd
@@ -40,7 +38,7 @@ def bbhx_fd(ifos=None, run_phenomd=True, nyquist_freq=0.1,
     length = 1024 # An internal generation parameter, not an output parameter
 
     shift_t_limits = False # Times are relative to merger
-    t_obs_start = 0.9*conversions.sec_to_year(1. / params['delta_f'])
+    t_obs_start = params['t_obs_start']
     t_obs_end = 0.0 # Generates ringdown as well!
 
     wave = wave_gen(m1, m2, a1, a2,
@@ -63,11 +61,11 @@ def bbhx_fd(ifos=None, run_phenomd=True, nyquist_freq=0.1,
     output = {}
     # Convert outputs to PyCBC arrays
     if sample_points is None:
-        length_of_wave = 1. / params['delta_f']
+        length_of_wave = params['t_obs_start']
         loc_of_signal_merger_within_wave = t_ref % length_of_wave
 
         for channel, tdi_num in wanted.items():
-            output[channel] = FrequencySeries(wave[tdi_num], delta_f=params['delta_f'],
+            output[channel] = FrequencySeries(wave[tdi_num], delta_f=1/params['t_obs_start'],
                                   epoch=params['tc'] - loc_of_signal_merger_within_wave)
     else:
         for channel, tdi_num in wanted.items():
