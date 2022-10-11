@@ -16,6 +16,7 @@ def bbhx_fd(ifos=None, run_phenomd=True, nyquist_freq=0.1,
     import numpy as np
     from pycbc.types import FrequencySeries, Array
     from pycbc import pnutils
+    from bbhx.utils.transform import LISA_to_SSB
 
     wave_gen = get_waveform_genner(run_phenomd=run_phenomd)
 
