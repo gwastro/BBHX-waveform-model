@@ -1,5 +1,14 @@
+import functools
+
+@functools.lru_cache()
+def get_waveform_genner(run_phenomd=True):
+    from bbhx.waveformbuild import BBHWaveformFD
+
+    wave_gen = BBHWaveformFD(amp_phase_kwargs=dict(run_phenomd=run_phenomd))
+    return wave_gen
+
 def bbhx_fd(ifos=None, run_phenomd=True, nyquist_freq=0.1,
-                            sample_points=None, **params):
+            ref_frame='LISA', sample_points=None, **params):
 
     if ifos is None:
         raise Exception("Must define data streams to compute")
@@ -8,11 +17,7 @@ def bbhx_fd(ifos=None, run_phenomd=True, nyquist_freq=0.1,
     from pycbc.types import FrequencySeries, Array
     from pycbc import pnutils
 
-    from bbhx.waveformbuild import BBHWaveformFD
-
-    # Some of this could go into waveform.py eventually.
-    # Is it slow to do this every time?? Does it need caching??
-    wave_gen = BBHWaveformFD(amp_phase_kwargs=dict(run_phenomd=run_phenomd))
+    wave_gen = get_waveform_genner(run_phenomd=run_phenomd)
 
     m1 = params['mass1']
     m2 = params['mass2']
@@ -26,6 +31,23 @@ def bbhx_fd(ifos=None, run_phenomd=True, nyquist_freq=0.1,
     beta = params['eclipticlatitude']
     psi = params['polarization']
     t_ref = params['tc']
+
+    if ref_frame == 'LISA':
+        # Transform to LISA frame
+        t_ref, lam, beta, psi = LISA_to_SSB(
+            t_ref,
+            lam,
+            beta,
+            psi
+        )
+    elif ref_frame == 'SSB':
+        # Don't need to update variable names
+        pass
+    else:
+        err_msg = f"Don't recognise reference frame {ref_frame}. "
+        err_msg = f"Known frames are 'LISA' and 'SSB'."
+
+
     if sample_points is None:
         print(1/params['t_obs_start'])
         freqs = np.arange(0, nyquist_freq, 1/params['t_obs_start'])
