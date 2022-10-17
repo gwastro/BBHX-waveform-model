@@ -34,7 +34,7 @@ def bbhx_fd(ifos=None, run_phenomd=True, nyquist_freq=0.1,
     t_ref = params['tc']
 
     if ref_frame == 'LISA':
-        # Transform to LISA frame
+        # Transform to SSB frame
         t_ref, lam, beta, psi = LISA_to_SSB(
             t_ref,
             lam,
