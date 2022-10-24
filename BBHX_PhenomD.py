@@ -7,6 +7,13 @@ def get_waveform_genner(mf_min, run_phenomd=True):
     wave_gen = BBHWaveformFD(amp_phase_kwargs=dict(run_phenomd=run_phenomd, mf_min=mf_min))
     return wave_gen
 
+@functools.lru_cache()
+def chirptime(m1, m2, f_lower):
+    from pycbc.waveform.spa_tmplt import findchirp_chirptime
+
+    duration = findchirp_chirptime(m1=m1, m2=m2, fLower=f_lower, porder=7)
+    return duration
+
 def bbhx_fd(ifos=None, run_phenomd=True, nyquist_freq=0.1,
             ref_frame='LISA', sample_points=None, **params):
 
@@ -18,7 +25,6 @@ def bbhx_fd(ifos=None, run_phenomd=True, nyquist_freq=0.1,
     from pycbc.types import FrequencySeries, Array
     from pycbc import pnutils
     from bbhx.utils.transform import LISA_to_SSB
-    from bbhx.waveforms.phenomhm import PhenomHMAmpPhase
 
     m1 = params['mass1']
     m2 = params['mass2']
@@ -33,15 +39,22 @@ def bbhx_fd(ifos=None, run_phenomd=True, nyquist_freq=0.1,
     psi = params['polarization']
     t_ref = params['tc']
 
-    # Using time-frequency track of dominant mode to get
-    # the corresponding `f_min` for `t_obs_start`.
-    phenomhm = PhenomHMAmpPhase(run_phenomd=False, mf_min=1e-20)
-    phenomhm(m1, m2, a1, a2, dist, phi_ref, f_ref, 
-             t_ref, modes=[(2,2)], length=10240)
-    freqs = phenomhm.freqs.copy()
-    tf = phenomhm.tf.copy()
-    ft_track = interp1d(tf[0][0], freqs)
-    f_min = ft_track(t_ref-t_obs_start*YRSID_SI) # in Hz
+    if 'f_lower' in params and 't_obs_start' not in params:
+        f_lower = params['f_lower'] # in Hz
+        f_min = f_lower
+        params['t_obs_start'] = chirptime(m1=m1, m2=m2, f_lower=f_lower)/YRSID_SI
+    elif 'f_lower' not in params and 't_obs_start' in params:
+        # Using findchirp_chirptime in PyCBC to calculate 
+        # the time-frequency track of dominant mode to get
+        # the corresponding `f_min` for `t_obs_start`.
+        freq_array = np.logspace(0.0001, 1, num=100)
+        t_array = []
+        for freq in freq_array:
+            t_array.append(chirptime(m1=m1, m2=m2, f_lower=freq)/YRSID_SI)
+        tf_track = interp1d(t_array, freq_array)
+        f_min = tf_track(t_obs_start) # in Hz
+    else:
+        err_msg = f"Must provide 'f_lower' or 't_obs_start'."
 
     wave_gen = get_waveform_genner(mf_min=f_min*MTSUN_SI*(m1+m2), run_phenomd=run_phenomd)
 
@@ -59,7 +72,6 @@ def bbhx_fd(ifos=None, run_phenomd=True, nyquist_freq=0.1,
     else:
         err_msg = f"Don't recognise reference frame {ref_frame}. "
         err_msg = f"Known frames are 'LISA' and 'SSB'."
-
 
     if sample_points is None:
         print(1/params['t_obs_start'])
