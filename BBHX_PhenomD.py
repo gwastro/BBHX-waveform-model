@@ -15,6 +15,9 @@ def chirptime(m1, m2, f_lower):
     return duration
 
 def interpolated_tf(m1, m2):
+    import numpy as np
+    from scipy.interpolate import interp1d
+
     # Using findchirp_chirptime in PyCBC to calculate 
     # the time-frequency track of dominant mode to get
     # the corresponding `f_min` for `t_obs_start`.
@@ -32,7 +35,6 @@ def bbhx_fd(ifos=None, run_phenomd=True, nyquist_freq=0.1,
         raise Exception("Must define data streams to compute")
 
     import numpy as np
-    from scipy.interpolate import interp1d
     from pycbc.types import FrequencySeries, Array
     from pycbc import pnutils
     from bbhx.utils.transform import LISA_to_SSB
