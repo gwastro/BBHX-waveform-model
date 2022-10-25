@@ -14,6 +14,17 @@ def chirptime(m1, m2, f_lower):
     duration = findchirp_chirptime(m1=m1, m2=m2, fLower=f_lower, porder=7)
     return duration
 
+def interpolated_tf(m1, m2):
+    # Using findchirp_chirptime in PyCBC to calculate 
+    # the time-frequency track of dominant mode to get
+    # the corresponding `f_min` for `t_obs_start`.
+    freq_array = np.logspace(0.0001, 1, num=100)
+    t_array = []
+    for freq in freq_array:
+        t_array.append(chirptime(m1=m1, m2=m2, f_lower=freq)/YRSID_SI)
+    tf_track = interp1d(t_array, freq_array)
+    return tf_track
+
 def bbhx_fd(ifos=None, run_phenomd=True, nyquist_freq=0.1,
             ref_frame='LISA', sample_points=None, **params):
 
@@ -40,21 +51,21 @@ def bbhx_fd(ifos=None, run_phenomd=True, nyquist_freq=0.1,
     t_ref = params['tc']
 
     if 'f_lower' in params and 't_obs_start' not in params:
-        f_lower = params['f_lower'] # in Hz
-        f_min = f_lower
-        params['t_obs_start'] = chirptime(m1=m1, m2=m2, f_lower=f_lower)/YRSID_SI
+        f_min = params['f_lower'] # in Hz
+        params['t_obs_start'] = chirptime(m1=m1, m2=m2, f_lower=f_min)/YRSID_SI
     elif 'f_lower' not in params and 't_obs_start' in params:
-        # Using findchirp_chirptime in PyCBC to calculate 
-        # the time-frequency track of dominant mode to get
-        # the corresponding `f_min` for `t_obs_start`.
-        freq_array = np.logspace(0.0001, 1, num=100)
-        t_array = []
-        for freq in freq_array:
-            t_array.append(chirptime(m1=m1, m2=m2, f_lower=freq)/YRSID_SI)
-        tf_track = interp1d(t_array, freq_array)
+        tf_track = interpolated_tf(m1, m2)
         f_min = tf_track(t_obs_start) # in Hz
+    elif 'f_lower' in params and 't_obs_start' in params:
+        f_min_input = params['f_lower'] # in Hz
+        tf_track = interpolated_tf(m1, m2)
+        f_min_tobs = tf_track(t_obs_start) # in Hz
+        if f_min_input <= f_min_tobs:
+            f_min = f_min_input
+        else:
+            f_min = f_min_tobs        
     else:
-        err_msg = f"Must provide 'f_lower' or 't_obs_start'."
+        err_msg = f"Must provide 'f_lower', 't_obs_start', or both."
 
     wave_gen = get_waveform_genner(mf_min=f_min*MTSUN_SI*(m1+m2), run_phenomd=run_phenomd)
 
