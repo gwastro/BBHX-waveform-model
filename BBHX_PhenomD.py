@@ -54,7 +54,7 @@ def bbhx_fd(ifos=None, run_phenomd=True, nyquist_freq=0.1,
 
     if 'f_lower' in params and 't_obs_start' not in params:
         f_min = params['f_lower'] # in Hz
-        params['t_obs_start'] = chirptime(m1=m1, m2=m2, f_lower=f_min)/YRSID_SI
+        params['t_obs_start'] = chirptime(m1=m1, m2=m2, f_lower=f_min)/YRSID_SI # in years
     elif 'f_lower' not in params and 't_obs_start' in params:
         tf_track = interpolated_tf(m1, m2)
         f_min = tf_track(t_obs_start) # in Hz
@@ -87,8 +87,8 @@ def bbhx_fd(ifos=None, run_phenomd=True, nyquist_freq=0.1,
         err_msg = f"Known frames are 'LISA' and 'SSB'."
 
     if sample_points is None:
-        print(1/params['t_obs_start'])
-        freqs = np.arange(0, nyquist_freq, 1/params['t_obs_start'])
+        print(1/params['t_obs_start']/YRSID_SI)
+        freqs = np.arange(0, nyquist_freq, 1/params['t_obs_start']/YRSID_SI)
     else:
         freqs = sample_points
     modes = [(2,2)] # More modes if not phenomd
@@ -98,7 +98,7 @@ def bbhx_fd(ifos=None, run_phenomd=True, nyquist_freq=0.1,
     length = 1024 # An internal generation parameter, not an output parameter
 
     shift_t_limits = False # Times are relative to merger
-    t_obs_start = params['t_obs_start']
+    t_obs_start = params['t_obs_start'] # in years
     t_obs_end = 0.0 # Generates ringdown as well!
 
     wave = wave_gen(m1, m2, a1, a2,
@@ -121,11 +121,11 @@ def bbhx_fd(ifos=None, run_phenomd=True, nyquist_freq=0.1,
     output = {}
     # Convert outputs to PyCBC arrays
     if sample_points is None:
-        length_of_wave = params['t_obs_start']
+        length_of_wave = params['t_obs_start']*YRSID_SI
         loc_of_signal_merger_within_wave = t_ref % length_of_wave
 
         for channel, tdi_num in wanted.items():
-            output[channel] = FrequencySeries(wave[tdi_num], delta_f=1/params['t_obs_start'],
+            output[channel] = FrequencySeries(wave[tdi_num], delta_f=1/params['t_obs_start']/YRSID_SI,
                                   epoch=params['tc'] - loc_of_signal_merger_within_wave)
     else:
         for channel, tdi_num in wanted.items():
