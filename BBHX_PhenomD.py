@@ -1,13 +1,13 @@
 import functools
+from bbhx.utils.constants import *
 
-@functools.lru_cache()
+
 def get_waveform_genner(mf_min, run_phenomd=True):
     from bbhx.waveformbuild import BBHWaveformFD
 
     wave_gen = BBHWaveformFD(amp_phase_kwargs=dict(run_phenomd=run_phenomd, mf_min=mf_min))
     return wave_gen
 
-@functools.lru_cache()
 def chirptime(m1, m2, f_lower):
     from pycbc.waveform.spa_tmplt import findchirp_chirptime
 
@@ -21,10 +21,10 @@ def interpolated_tf(m1, m2):
     # Using findchirp_chirptime in PyCBC to calculate 
     # the time-frequency track of dominant mode to get
     # the corresponding `f_min` for `t_obs_start`.
-    freq_array = np.logspace(0.0001, 1, num=100)
+    freq_array = np.logspace(-4, 0, num=100)
     t_array = []
     for freq in freq_array:
-        t_array.append(chirptime(m1=m1, m2=m2, f_lower=freq)/YRSID_SI)
+        t_array.append(chirptime(m1=m1, m2=m2, f_lower=freq))
     tf_track = interp1d(t_array, freq_array)
     return tf_track
 
@@ -51,10 +51,16 @@ def bbhx_fd(ifos=None, run_phenomd=True, nyquist_freq=0.1,
     beta = params['eclipticlatitude']
     psi = params['polarization']
     t_ref = params['tc']
+    t_obs_start = params['t_obs_start'] # in seconds
+
+    if 'f_lower' in params and params['f_lower'] < 0:
+        # the default value of 'f_lower' in PyCBC is -1.
+        params.pop('f_lower')
+    else: pass
 
     if 'f_lower' in params and 't_obs_start' not in params:
         f_min = params['f_lower'] # in Hz
-        params['t_obs_start'] = chirptime(m1=m1, m2=m2, f_lower=f_min)/YRSID_SI # in years
+        params['t_obs_start'] = chirptime(m1=m1, m2=m2, f_lower=f_min) # in seconds
     elif 'f_lower' not in params and 't_obs_start' in params:
         tf_track = interpolated_tf(m1, m2)
         f_min = tf_track(t_obs_start) # in Hz
@@ -87,8 +93,8 @@ def bbhx_fd(ifos=None, run_phenomd=True, nyquist_freq=0.1,
         err_msg = f"Known frames are 'LISA' and 'SSB'."
 
     if sample_points is None:
-        print(1/params['t_obs_start']/YRSID_SI)
-        freqs = np.arange(0, nyquist_freq, 1/params['t_obs_start']/YRSID_SI)
+        freqs = np.arange(f_min, nyquist_freq, 1/params['t_obs_start'])
+        print("Calculating values at frequencies: ", freqs)
     else:
         freqs = sample_points
     modes = [(2,2)] # More modes if not phenomd
@@ -96,16 +102,14 @@ def bbhx_fd(ifos=None, run_phenomd=True, nyquist_freq=0.1,
     fill = True # See the BBHX documentation
     squeeze = True # See the BBHX documentation
     length = 1024 # An internal generation parameter, not an output parameter
-
     shift_t_limits = False # Times are relative to merger
-    t_obs_start = params['t_obs_start'] # in years
     t_obs_end = 0.0 # Generates ringdown as well!
 
     wave = wave_gen(m1, m2, a1, a2,
                     dist, phi_ref, f_ref, inc, lam,
                     beta, psi, t_ref, freqs=freqs,
                     modes=modes, direct=direct, fill=fill, squeeze=squeeze,
-                    length=length,t_obs_start=t_obs_start,
+                    length=length,t_obs_start=t_obs_start/YRSID_SI,
                     t_obs_end=t_obs_end,
                     shift_t_limits=shift_t_limits)[0]
 
@@ -121,11 +125,11 @@ def bbhx_fd(ifos=None, run_phenomd=True, nyquist_freq=0.1,
     output = {}
     # Convert outputs to PyCBC arrays
     if sample_points is None:
-        length_of_wave = params['t_obs_start']*YRSID_SI
+        length_of_wave = params['t_obs_start']
         loc_of_signal_merger_within_wave = t_ref % length_of_wave
 
         for channel, tdi_num in wanted.items():
-            output[channel] = FrequencySeries(wave[tdi_num], delta_f=1/params['t_obs_start']/YRSID_SI,
+            output[channel] = FrequencySeries(wave[tdi_num], delta_f=1/params['t_obs_start'],
                                   epoch=params['tc'] - loc_of_signal_merger_within_wave)
     else:
         for channel, tdi_num in wanted.items():
