@@ -28,7 +28,7 @@ def interpolated_tf(m1, m2):
     tf_track = interp1d(t_array, freq_array)
     return tf_track
 
-def bbhx_fd(ifos=None, run_phenomd=True, nyquist_freq=0.1,
+def bbhx_fd(ifos=None, run_phenomd=True, f_final=0.1,
             ref_frame='LISA', sample_points=None, **params):
 
     if ifos is None:
@@ -56,6 +56,14 @@ def bbhx_fd(ifos=None, run_phenomd=True, nyquist_freq=0.1,
     if 'f_lower' in params and params['f_lower'] < 0:
         # the default value of 'f_lower' in PyCBC is -1.
         params.pop('f_lower')
+    else: pass
+
+    t_max = chirptime(m1=m1, m2=m2, f_lower=1e-4)
+    if params['t_obs_start'] > t_max:
+        print("Input `t_obs_start` is longer than actual waveform (from 1e-4 Hz), " +
+                "reset it to %f (s)." % t_max)
+        params['t_obs_start'] = t_max
+        t_obs_start = t_max
     else: pass
 
     if 'f_lower' in params and 't_obs_start' not in params:
@@ -93,10 +101,11 @@ def bbhx_fd(ifos=None, run_phenomd=True, nyquist_freq=0.1,
         err_msg = f"Known frames are 'LISA' and 'SSB'."
 
     if sample_points is None:
-        freqs = np.arange(f_min, nyquist_freq, 1/params['t_obs_start'])
-        print("Calculating values at frequencies: ", freqs)
+        freqs = np.arange(f_min, f_final, 1/params['t_obs_start'])
+        print("Calculating values at frequencies (%d points): %s" % (len(freqs),freqs))
     else:
         freqs = sample_points
+
     modes = [(2,2)] # More modes if not phenomd
     direct = False # See the BBHX documentation
     fill = True # See the BBHX documentation
@@ -109,7 +118,7 @@ def bbhx_fd(ifos=None, run_phenomd=True, nyquist_freq=0.1,
                     dist, phi_ref, f_ref, inc, lam,
                     beta, psi, t_ref, freqs=freqs,
                     modes=modes, direct=direct, fill=fill, squeeze=squeeze,
-                    length=length,t_obs_start=t_obs_start/YRSID_SI,
+                    length=length, t_obs_start=t_obs_start/YRSID_SI,
                     t_obs_end=t_obs_end,
                     shift_t_limits=shift_t_limits)[0]
 
@@ -127,11 +136,15 @@ def bbhx_fd(ifos=None, run_phenomd=True, nyquist_freq=0.1,
     if sample_points is None:
         length_of_wave = params['t_obs_start']
         loc_of_signal_merger_within_wave = t_ref % length_of_wave
+        df = 1 / params['t_obs_start']
+        padding = int(f_min/df)
 
         for channel, tdi_num in wanted.items():
-            output[channel] = FrequencySeries(wave[tdi_num], delta_f=1/params['t_obs_start'],
+            wave_padded = np.concatenate((np.zeros(padding, dtype=complex),wave[tdi_num]),axis=0)
+            output[channel] = FrequencySeries(wave_padded, delta_f=df,
                                   epoch=params['tc'] - loc_of_signal_merger_within_wave)
     else:
         for channel, tdi_num in wanted.items():
             output[channel] = Array(wave[tdi_num])
+
     return output
