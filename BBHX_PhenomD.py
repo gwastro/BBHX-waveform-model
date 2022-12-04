@@ -58,24 +58,25 @@ def bbhx_fd(ifos=None, run_phenomd=True, f_final=0.1,
         params.pop('f_lower')
     else: pass
 
-    t_max = chirptime(m1=m1, m2=m2, f_lower=1e-4)
-    if params['t_obs_start'] > t_max:
-        print("Input `t_obs_start` is longer than actual waveform (from 1e-4 Hz), " +
-                "reset it to %f (s)." % t_max)
-        params['t_obs_start'] = t_max
-        t_obs_start = t_max
-    else: pass
-
     if 'f_lower' in params and 't_obs_start' not in params:
         f_min = params['f_lower'] # in Hz
         params['t_obs_start'] = chirptime(m1=m1, m2=m2, f_lower=f_min) # in seconds
     elif 'f_lower' not in params and 't_obs_start' in params:
         tf_track = interpolated_tf(m1, m2)
-        f_min = tf_track(t_obs_start) # in Hz
+        t_max = chirptime(m1=m1, m2=m2, f_lower=1e-4)
+        if params['t_obs_start'] > t_max:
+            # Avoid "above the interpolation range" issue.
+            f_min = 1e-4
+        else:
+            f_min = tf_track(t_obs_start) # in Hz
     elif 'f_lower' in params and 't_obs_start' in params:
         f_min_input = params['f_lower'] # in Hz
         tf_track = interpolated_tf(m1, m2)
-        f_min_tobs = tf_track(t_obs_start) # in Hz
+        t_max = chirptime(m1=m1, m2=m2, f_lower=1e-4)
+        if params['t_obs_start'] > t_max:
+            f_min_tobs = 1e-4
+        else:
+            f_min_tobs = tf_track(t_obs_start) # in Hz
         if f_min_input <= f_min_tobs:
             f_min = f_min_input
         else:
@@ -146,5 +147,7 @@ def bbhx_fd(ifos=None, run_phenomd=True, f_final=0.1,
     else:
         for channel, tdi_num in wanted.items():
             output[channel] = Array(wave[tdi_num])
-
+    print(channel)
+    print(f_min, f_final, freqs)
+    print(output[channel].data[:10])
     return output
