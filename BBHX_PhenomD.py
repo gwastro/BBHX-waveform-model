@@ -21,10 +21,10 @@ def interpolated_tf(m1, m2):
     # Using findchirp_chirptime in PyCBC to calculate 
     # the time-frequency track of dominant mode to get
     # the corresponding `f_min` for `t_obs_start`.
-    freq_array = np.logspace(-4, 0, num=100)
-    t_array = []
-    for freq in freq_array:
-        t_array.append(chirptime(m1=m1, m2=m2, f_lower=freq))
+    freq_array = np.logspace(-4, 0, num=10)
+    t_array = np.zeros(len(freq_array))
+    for i in range(len(freq_array)):
+        t_array[i] = chirptime(m1=m1, m2=m2, f_lower=freq_array[i])
     tf_track = interp1d(t_array, freq_array)
     return tf_track
 
@@ -103,7 +103,6 @@ def bbhx_fd(ifos=None, run_phenomd=True, f_final=0.1,
 
     if sample_points is None:
         freqs = np.arange(f_min, f_final, 1/params['t_obs_start'])
-        print("Calculating values at frequencies (%d points): %s" % (len(freqs),freqs))
     else:
         freqs = sample_points
 
@@ -147,7 +146,5 @@ def bbhx_fd(ifos=None, run_phenomd=True, f_final=0.1,
     else:
         for channel, tdi_num in wanted.items():
             output[channel] = Array(wave[tdi_num])
-    print(channel)
-    print(f_min, f_final, freqs)
-    print(output[channel].data[:10])
+
     return output
