@@ -1,12 +1,23 @@
 import functools
+import math
+import numpy as np
+from scipy.interpolate import interp1d
 from bbhx.utils.constants import *
 
 
-def get_waveform_genner(mf_min, run_phenomd=True):
+@functools.lru_cache(maxsize=128)
+def get_waveform_genner(log_mf_min, run_phenomd=True):
     from bbhx.waveformbuild import BBHWaveformFD
 
+    # See below where this function is called for description of how we handle
+    # log_mf_min.
+    mf_min = math.exp(log_mf_min/25.)
     wave_gen = BBHWaveformFD(amp_phase_kwargs=dict(run_phenomd=run_phenomd, mf_min=mf_min))
     return wave_gen
+
+@functools.lru_cache(maxsize=10)
+def cached_arange(start, stop, spacing):
+    return np.arange(start, stop, spacing)
 
 def chirptime(m1, m2, f_lower):
     from pycbc.waveform.spa_tmplt import findchirp_chirptime
@@ -15,9 +26,6 @@ def chirptime(m1, m2, f_lower):
     return duration
 
 def interpolated_tf(m1, m2):
-    import numpy as np
-    from scipy.interpolate import interp1d
-
     # Using findchirp_chirptime in PyCBC to calculate 
     # the time-frequency track of dominant mode to get
     # the corresponding `f_min` for `t_obs_start`.
@@ -28,13 +36,12 @@ def interpolated_tf(m1, m2):
     tf_track = interp1d(t_array, freq_array)
     return tf_track
 
-def bbhx_fd(ifos=None, run_phenomd=True, f_final=0.1,
+def bbhx_fd(ifos=None, run_phenomd=True,
             ref_frame='LISA', sample_points=None, **params):
 
     if ifos is None:
         raise Exception("Must define data streams to compute")
 
-    import numpy as np
     from pycbc.types import FrequencySeries, Array
     from pycbc import pnutils
     from bbhx.utils.transform import LISA_to_SSB
@@ -58,33 +65,34 @@ def bbhx_fd(ifos=None, run_phenomd=True, f_final=0.1,
         params.pop('f_lower')
     else: pass
 
-    if 'f_lower' in params and 't_obs_start' not in params:
-        f_min = params['f_lower'] # in Hz
-        params['t_obs_start'] = chirptime(m1=m1, m2=m2, f_lower=f_min) # in seconds
-    elif 'f_lower' not in params and 't_obs_start' in params:
+    if 'f_lower' not in params:
         tf_track = interpolated_tf(m1, m2)
         t_max = chirptime(m1=m1, m2=m2, f_lower=1e-4)
-        if params['t_obs_start'] > t_max:
+        if t_obs_start > t_max:
             # Avoid "above the interpolation range" issue.
             f_min = 1e-4
         else:
             f_min = tf_track(t_obs_start) # in Hz
-    elif 'f_lower' in params and 't_obs_start' in params:
+    else:
         f_min_input = params['f_lower'] # in Hz
         tf_track = interpolated_tf(m1, m2)
         t_max = chirptime(m1=m1, m2=m2, f_lower=1e-4)
-        if params['t_obs_start'] > t_max:
+        if t_obs_start > t_max:
             f_min_tobs = 1e-4
         else:
             f_min_tobs = tf_track(t_obs_start) # in Hz
         if f_min_input <= f_min_tobs:
             f_min = f_min_input
         else:
-            f_min = f_min_tobs        
-    else:
-        err_msg = f"Must provide 'f_lower', 't_obs_start', or both."
+            f_min = f_min_tobs
 
-    wave_gen = get_waveform_genner(mf_min=f_min*MTSUN_SI*(m1+m2), run_phenomd=run_phenomd)
+    # We want to cache the waveform generator, but as it takes a mass dependent
+    # start frequency as input this is hard.
+    # To solve this we *round* the *logarithm* of this mass-dependent start
+    # frequency. The factor of 25 ensures reasonable spacing while doing this.
+    # So we round down to the nearest 1/25 of the logarithm of the frequency
+    log_mf_min = int(math.log(f_min*MTSUN_SI*(m1+m2)) * 25)
+    wave_gen = get_waveform_genner(log_mf_min, run_phenomd=run_phenomd)
 
     if ref_frame == 'LISA':
         # Transform to SSB frame
@@ -102,7 +110,12 @@ def bbhx_fd(ifos=None, run_phenomd=True, f_final=0.1,
         err_msg = f"Known frames are 'LISA' and 'SSB'."
 
     if sample_points is None:
-        freqs = np.arange(f_min, f_final, 1/params['t_obs_start'])
+        # It's likely this will be called repeatedly with the same values
+        # in many applications.
+        if 'f_final' in params and params['f_final'] != 0:
+            freqs = cached_arange(0, params['f_final'], 1/t_obs_start)
+        else:
+            err_msg = f"Please set 'f_final' in **params."
     else:
         freqs = sample_points
 
@@ -134,17 +147,19 @@ def bbhx_fd(ifos=None, run_phenomd=True, f_final=0.1,
     output = {}
     # Convert outputs to PyCBC arrays
     if sample_points is None:
-        length_of_wave = params['t_obs_start']
+        length_of_wave = t_obs_start
         loc_of_signal_merger_within_wave = t_ref % length_of_wave
-        df = 1 / params['t_obs_start']
-        padding = int(f_min/df)
+        df = 1 / t_obs_start
 
         for channel, tdi_num in wanted.items():
-            wave_padded = np.concatenate((np.zeros(padding, dtype=complex),wave[tdi_num]),axis=0)
-            output[channel] = FrequencySeries(wave_padded, delta_f=df,
-                                  epoch=params['tc'] - loc_of_signal_merger_within_wave)
+            output[channel] = FrequencySeries(
+                wave[tdi_num],
+                delta_f=df,
+                epoch=params['tc'] - loc_of_signal_merger_within_wave,
+                copy=False
+            )
     else:
         for channel, tdi_num in wanted.items():
-            output[channel] = Array(wave[tdi_num])
+            output[channel] = Array(wave[tdi_num], copy=False)
 
     return output
