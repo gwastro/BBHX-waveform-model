@@ -45,22 +45,21 @@ def bbhx_fd(ifos=None, run_phenomd=True,
     from pycbc.types import FrequencySeries, Array
     from pycbc import pnutils
 
-    nparams = params.copy()
-    m1 = nparams['mass1']
-    m2 = nparams['mass2']
-    a1 = nparams['spin1z']
-    a2 = nparams['spin2z']
-    dist = pnutils.megaparsecs_to_meters(nparams['distance'])
-    phi_ref = nparams['coa_phase']
+    m1 = params['mass1']
+    m2 = params['mass2']
+    a1 = params['spin1z']
+    a2 = params['spin2z']
+    dist = pnutils.megaparsecs_to_meters(params['distance'])
+    phi_ref = params['coa_phase']
     f_ref = 0 # This is now NOT standard LAL convention!
-    inc = nparams['inclination']
-    lam = nparams['eclipticlongitude']
-    beta = nparams['eclipticlatitude']
-    psi = nparams['polarization']
-    t_ref = nparams['tc']
-    t_obs_start = nparams['t_obs_start'] # in seconds
+    inc = params['inclination']
+    lam = params['eclipticlongitude']
+    beta = params['eclipticlatitude']
+    psi = params['polarization']
+    t_ref = params['tc']
+    t_obs_start = params['t_obs_start'] # in seconds
 
-    if ('f_lower' not in nparams) or (nparams['f_lower'] < 0):
+    if ('f_lower' not in params) or (params['f_lower'] < 0):
         # the default value of 'f_lower' in PyCBC is -1.
         tf_track = interpolated_tf(m1, m2)
         t_max = chirptime(m1=m1, m2=m2, f_lower=1e-4)
@@ -70,7 +69,7 @@ def bbhx_fd(ifos=None, run_phenomd=True,
         else:
             f_min = tf_track(t_obs_start) # in Hz
     else:
-        f_min = nparams['f_lower'] # in Hz
+        f_min = params['f_lower'] # in Hz
         tf_track = interpolated_tf(m1, m2)
         t_max = chirptime(m1=m1, m2=m2, f_lower=1e-4)
         if t_obs_start > t_max:
@@ -106,10 +105,10 @@ def bbhx_fd(ifos=None, run_phenomd=True,
     if sample_points is None:
         # It's likely this will be called repeatedly with the same values
         # in many applications.
-        if 'f_final' in nparams and nparams['f_final'] != 0:
-            freqs = cached_arange(0, nparams['f_final'], 1/t_obs_start)
+        if 'f_final' in params and params['f_final'] != 0:
+            freqs = cached_arange(0, params['f_final'], 1/t_obs_start)
         else:
-            err_msg = f"Please set 'f_final' in **params."
+            raise Exception("Please set 'f_final' in **params.")
     else:
         freqs = sample_points
 
@@ -149,7 +148,7 @@ def bbhx_fd(ifos=None, run_phenomd=True,
             output[channel] = FrequencySeries(
                 wave[tdi_num],
                 delta_f=df,
-                epoch=nparams['tc'] - loc_of_signal_merger_within_wave,
+                epoch=params['tc'] - loc_of_signal_merger_within_wave,
                 copy=False
             )
     else:
