@@ -25,6 +25,16 @@ def chirptime(m1, m2, f_lower):
     duration = findchirp_chirptime(m1=m1, m2=m2, fLower=f_lower, porder=7)
     return duration
 
+def imr_duration(m1, m2, s1z, s2z, f_lower):
+    # More accurate duration of the waveform, including merge, ringdown,
+    # and aligned spin effects.
+    import lal
+    from pycbc import libutils
+    lalsimulation = libutils.import_optional('lalsimulation')
+    time_length = lalsimulation.SimIMRPhenomDChirpTime(
+                        m1 * lal.MSUN_SI, m2 * lal.MSUN_SI, s1z, s2z, f_lower)
+    return time_length * 1.1
+
 def interpolated_tf(m1, m2):
     # Using findchirp_chirptime in PyCBC to calculate 
     # the time-frequency track of dominant mode to get
