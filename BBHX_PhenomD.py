@@ -4,7 +4,7 @@ import numpy as np
 from scipy.interpolate import interp1d
 from bbhx.utils.constants import MTSUN_SI, YRSID_SI
 from bbhx.waveformbuild import BBHWaveformFD
-from bbhx.utils.transform import LISA_to_SSB
+from bbhx.utils.transform import LISA_to_SSB, SSB_to_LISA
 
 
 @functools.lru_cache(maxsize=128)
@@ -88,16 +88,22 @@ def bbhx_fd(ifos=None, run_phenomd=True,
     wave_gen = get_waveform_genner(log_mf_min, run_phenomd=run_phenomd)
 
     if ref_frame == 'LISA':
+        t_ref_lisa = t_ref
         # Transform to SSB frame
         t_ref, lam, beta, psi = LISA_to_SSB(
-            t_ref,
+            t_ref_lisa,
             lam,
             beta,
             psi
         )
     elif ref_frame == 'SSB':
         # Don't need to update variable names
-        pass
+        t_ref_lisa, _, _, _ = SSB_to_LISA(
+            t_ref,
+            lam,
+            beta,
+            psi
+        )
     else:
         err_msg = f"Don't recognise reference frame {ref_frame}. "
         err_msg = f"Known frames are 'LISA' and 'SSB'."
@@ -141,14 +147,14 @@ def bbhx_fd(ifos=None, run_phenomd=True,
     # Convert outputs to PyCBC arrays
     if sample_points is None:
         length_of_wave = t_obs_start
-        loc_of_signal_merger_within_wave = t_ref % length_of_wave
+        loc_of_signal_merger_within_wave = t_ref_lisa % length_of_wave
         df = 1 / t_obs_start
 
         for channel, tdi_num in wanted.items():
             output[channel] = FrequencySeries(
                 wave[tdi_num],
                 delta_f=df,
-                epoch=params['tc'] - loc_of_signal_merger_within_wave,
+                epoch=t_ref_lisa - loc_of_signal_merger_within_wave,
                 copy=False
             )
     else:
