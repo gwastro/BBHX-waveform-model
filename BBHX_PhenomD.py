@@ -56,8 +56,8 @@ def bbhx_fd(ifos=None, run_phenomd=True,
     from pycbc.types import FrequencySeries, Array
     from pycbc import pnutils
 
-    m1 = params['mass1']
-    m2 = params['mass2']
+    m1 = np.float64(params['mass1'])
+    m2 = np.float64(params['mass2'])
     a1 = params['spin1z']
     a2 = params['spin2z']
     dist = pnutils.megaparsecs_to_meters(params['distance'])
