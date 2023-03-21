@@ -25,16 +25,21 @@ def chirptime(m1, m2, f_lower):
     duration = findchirp_chirptime(m1=m1, m2=m2, fLower=f_lower, porder=7)
     return duration
 
-def imr_duration(m1, m2, s1z, s2z, f_lower):
-    # More accurate duration of the waveform, including merge, ringdown,
-    # and aligned spin effects.
+def imr_duration(**params):
+    # More accurate duration (within LISA frequency band) of the waveform,
+    # including merge, ringdown, and aligned spin effects.
+    # This is used in the time-domain signal injection in PyCBC.
+    import warnings
     from pycbc.waveform.waveform import imrphenomd_length_in_time
 
-    params = {'mass1':m1, 'mass2':m2, 'spin1z':s1z, 'spin2z':s2z, 'f_lower':f_lower}
     time_length = np.float64(imrphenomd_length_in_time(**params))
     if time_length < 0:
-        raise ValueError("Negative duration!")
-    return time_length
+        warnings.warn("Negative duration! Reset it to 1 month (2678400 s).")
+        time_length = 2678400
+    if time_length >= params['t_obs_start']:
+        warnings.warn("Longer than data length! Reset it to `t_obs_start`.")
+        time_length = params['t_obs_start']
+    return time_length * 1.1
 
 def interpolated_tf(m1, m2):
     # Using findchirp_chirptime in PyCBC to calculate 
