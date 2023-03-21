@@ -32,7 +32,10 @@ def imr_duration(**params):
     import warnings
     from pycbc.waveform.waveform import imrphenomd_length_in_time
 
-    time_length = np.float64(imrphenomd_length_in_time(**params))
+    nparams = {'mass1':params['mass1'], 'mass2':params['mass2'],
+               'spin1z':params['spin1z'], 'spin2z':params['spin2z'],
+               'f_lower':params['f_lower']}
+    time_length = np.float64(imrphenomd_length_in_time(**nparams))
     if time_length < 0:
         warnings.warn("Negative duration! Reset it to 1 month (2678400 s).")
         time_length = 2678400
