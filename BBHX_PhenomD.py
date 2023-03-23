@@ -25,25 +25,6 @@ def chirptime(m1, m2, f_lower):
     duration = findchirp_chirptime(m1=m1, m2=m2, fLower=f_lower, porder=7)
     return duration
 
-def imr_duration(**params):
-    # More accurate duration (within LISA frequency band) of the waveform,
-    # including merge, ringdown, and aligned spin effects.
-    # This is used in the time-domain signal injection in PyCBC.
-    import warnings
-    from pycbc.waveform.waveform import imrphenomd_length_in_time
-
-    nparams = {'mass1':params['mass1'], 'mass2':params['mass2'],
-               'spin1z':params['spin1z'], 'spin2z':params['spin2z'],
-               'f_lower':params['f_lower']}
-    time_length = np.float64(imrphenomd_length_in_time(**nparams))
-    if time_length < 2678400:
-        warnings.warn("Waveform duration is too short! Setting it to 1 month (2678400 s).")
-        time_length = 2678400
-    if time_length >= params['t_obs_start']:
-        warnings.warn("Waveform duration is longer than data length! Setting it to `t_obs_start`.")
-        time_length = params['t_obs_start']
-    return time_length * 1.1
-
 def interpolated_tf(m1, m2):
     # Using findchirp_chirptime in PyCBC to calculate 
     # the time-frequency track of dominant mode to get
@@ -64,8 +45,8 @@ def bbhx_fd(ifos=None, run_phenomd=True,
     from pycbc.types import FrequencySeries, Array
     from pycbc import pnutils
 
-    m1 = np.float64(params['mass1'])
-    m2 = np.float64(params['mass2'])
+    m1 = params['mass1']
+    m2 = params['mass2']
     a1 = params['spin1z']
     a2 = params['spin2z']
     dist = pnutils.megaparsecs_to_meters(params['distance'])

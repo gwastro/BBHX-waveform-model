@@ -19,9 +19,7 @@ setup (
     keywords = ['pycbc', 'signal processing', 'gravitational waves', 'lisa'],
     install_requires = ['pycbc'],
     py_modules = ['BBHX_PhenomD'],
-    entry_points = {"pycbc.waveform.fd_det":"BBHX_PhenomD=BBHX_PhenomD:bbhx_fd",
-                    "pycbc.waveform.fd_det_sequence":"BBHX_PhenomD=BBHX_PhenomD:bbhx_fd",
-                    "pycbc.waveform.length":"BBHX_PhenomD=BBHX_PhenomD:imr_duration"},
+    entry_points = {"pycbc.waveform.fd_det_sequence":"BBHX_PhenomD=BBHX_PhenomD:bbhx_fd"},
 
     classifiers=[
         'Programming Language :: Python',
