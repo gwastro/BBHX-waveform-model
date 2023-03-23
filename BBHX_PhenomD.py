@@ -66,17 +66,17 @@ def bbhx_fd(ifos=None, run_phenomd=True,
 
     m1 = np.float64(params['mass1'])
     m2 = np.float64(params['mass2'])
-    a1 = params['spin1z']
-    a2 = params['spin2z']
-    dist = pnutils.megaparsecs_to_meters(params['distance'])
-    phi_ref = params['coa_phase']
-    f_ref = 0 # This is now NOT standard LAL convention!
-    inc = params['inclination']
-    lam = params['eclipticlongitude']
-    beta = params['eclipticlatitude']
-    psi = params['polarization']
-    t_ref = params['tc']
-    t_obs_start = params['t_obs_start'] # in seconds
+    a1 = np.float64(params['spin1z'])
+    a2 = np.float64(params['spin2z'])
+    dist = np.float64(pnutils.megaparsecs_to_meters(params['distance']))
+    phi_ref = np.float64(params['coa_phase'])
+    f_ref = 0.0 # This is now NOT standard LAL convention!
+    inc = np.float64(params['inclination'])
+    lam = np.float64(params['eclipticlongitude'])
+    beta = np.float64(params['eclipticlatitude'])
+    psi = np.float64(params['polarization'])
+    t_ref = np.float64(params['tc'])
+    t_obs_start = np.float64(params['t_obs_start']) # in seconds
 
     if ('f_lower' not in params) or (params['f_lower'] < 0):
         # the default value of 'f_lower' in PyCBC is -1.
