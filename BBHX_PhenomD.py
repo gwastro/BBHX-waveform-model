@@ -36,11 +36,11 @@ def imr_duration(**params):
                'spin1z':params['spin1z'], 'spin2z':params['spin2z'],
                'f_lower':params['f_lower']}
     time_length = np.float64(imrphenomd_length_in_time(**nparams))
-    if time_length < 0:
-        warnings.warn("Negative duration! Reset it to 1 month (2678400 s).")
+    if time_length < 2678400:
+        warnings.warn("Waveform duration is too short! Setting it to 1 month (2678400 s).")
         time_length = 2678400
     if time_length >= params['t_obs_start']:
-        warnings.warn("Longer than data length! Reset it to `t_obs_start`.")
+        warnings.warn("Waveform duration is longer than data length! Setting it to `t_obs_start`.")
         time_length = params['t_obs_start']
     return time_length * 1.1
 
