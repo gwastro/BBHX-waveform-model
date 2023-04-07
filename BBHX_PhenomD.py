@@ -78,19 +78,18 @@ def bbhx_fd(ifos=None, run_phenomd=True,
     t_obs_start = params['t_obs_start'] # in seconds
 
     if ref_frame == 'LISA':
-        t_ref = params['tc_lisa']
+        t_ref_lisa = params['tc_lisa'] + t_offset * YRSID_SI
         lam = params['eclipticlongitude_lisa']
         beta = params['eclipticlatitude_lisa']
         psi = params['polarization_lisa']
         # Transform to SSB frame
         t_ref, lam, beta, psi = LISA_to_SSB(
-            t_ref,
+            t_ref_lisa,
             lam,
             beta,
             psi,
-            t_offset
+            0
         )
-        t_ref_lisa = t_ref
 
     elif ref_frame == 'SSB':
         t_ref = params['tc_ssb']
@@ -177,14 +176,14 @@ def bbhx_fd(ifos=None, run_phenomd=True,
     # Convert outputs to PyCBC arrays
     if sample_points is None:
         length_of_wave = t_obs_start
-        loc_of_signal_merger_within_wave = (t_ref_lisa + t_offset*YRSID_SI) % length_of_wave
+        loc_of_signal_merger_within_wave = t_ref_lisa % length_of_wave
         df = 1 / t_obs_start
 
         for channel, tdi_num in wanted.items():
             output[channel] = FrequencySeries(
                 wave[tdi_num],
                 delta_f=df,
-                epoch=t_ref_lisa + t_offset*YRSID_SI - loc_of_signal_merger_within_wave,
+                epoch=t_ref_lisa - loc_of_signal_merger_within_wave,
                 copy=False
             )
     else:
