@@ -183,7 +183,7 @@ def bbhx_fd(ifos=None, run_phenomd=True,
             output[channel] = FrequencySeries(
                 wave[tdi_num],
                 delta_f=df,
-                epoch=t_ref_lisa - loc_of_signal_merger_within_wave,
+                epoch=t_ref_lisa - t_offset * YRSID_SI - loc_of_signal_merger_within_wave,
                 copy=False
             )
     else:
