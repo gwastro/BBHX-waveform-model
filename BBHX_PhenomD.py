@@ -4,7 +4,9 @@ import numpy as np
 from scipy.interpolate import interp1d
 from bbhx.utils.constants import MTSUN_SI, YRSID_SI
 from bbhx.waveformbuild import BBHWaveformFD
-from bbhx.utils.transform import LISA_to_SSB, SSB_to_LISA
+# from bbhx.utils.transform import LISA_to_SSB, SSB_to_LISA
+from pycbc.coordinates import lisa_to_ssb as LISA_to_SSB
+from pycbc.coordinates import ssb_to_lisa as SSB_to_LISA
 
 
 @functools.lru_cache(maxsize=128)
@@ -68,15 +70,44 @@ def bbhx_fd(ifos=None, run_phenomd=True,
     m2 = np.float64(params['mass2'])
     a1 = params['spin1z']
     a2 = params['spin2z']
+    inc = params['inclination']
     dist = pnutils.megaparsecs_to_meters(params['distance'])
     phi_ref = params['coa_phase']
     f_ref = 0 # This is now NOT standard LAL convention!
-    inc = params['inclination']
-    lam = params['eclipticlongitude']
-    beta = params['eclipticlatitude']
-    psi = params['polarization']
-    t_ref = params['tc']
+    t_offset = params['t_offset'] # in years
     t_obs_start = params['t_obs_start'] # in seconds
+
+    if ref_frame == 'LISA':
+        t_ref = params['tc_lisa']
+        lam = params['eclipticlongitude_lisa']
+        beta = params['eclipticlatitude_lisa']
+        psi = params['polarization_lisa']
+        t_ref_lisa = t_ref
+        # Transform to SSB frame
+        t_ref, lam, beta, psi = LISA_to_SSB(
+            t_ref_lisa,
+            lam,
+            beta,
+            psi,
+            t_offset
+        )
+    elif ref_frame == 'SSB':
+        t_ref = params['tc_ssb']
+        lam = params['eclipticlongitude']
+        beta = params['eclipticlatitude']
+        psi = params['polarization_ssb']
+        # Don't need to update variable names,
+        # because wave_gen receives parameters in SSB frame.
+        t_ref_lisa, _, _, _ = SSB_to_LISA(
+            t_ref,
+            lam,
+            beta,
+            psi,
+            t_offset
+        )
+    else:
+        err_msg = f"Don't recognise reference frame {ref_frame}. "
+        err_msg = f"Known frames are 'LISA' and 'SSB'."
 
     if ('f_lower' not in params) or (params['f_lower'] < 0):
         # the default value of 'f_lower' in PyCBC is -1.
@@ -105,27 +136,6 @@ def bbhx_fd(ifos=None, run_phenomd=True,
     # So we round down to the nearest 1/25 of the logarithm of the frequency
     log_mf_min = int(math.log(f_min*MTSUN_SI*(m1+m2)) * 25)
     wave_gen = get_waveform_genner(log_mf_min, run_phenomd=run_phenomd)
-
-    if ref_frame == 'LISA':
-        t_ref_lisa = t_ref
-        # Transform to SSB frame
-        t_ref, lam, beta, psi = LISA_to_SSB(
-            t_ref_lisa,
-            lam,
-            beta,
-            psi
-        )
-    elif ref_frame == 'SSB':
-        # Don't need to update variable names
-        t_ref_lisa, _, _, _ = SSB_to_LISA(
-            t_ref,
-            lam,
-            beta,
-            psi
-        )
-    else:
-        err_msg = f"Don't recognise reference frame {ref_frame}. "
-        err_msg = f"Known frames are 'LISA' and 'SSB'."
 
     if sample_points is None:
         # It's likely this will be called repeatedly with the same values
