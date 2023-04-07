@@ -92,7 +92,7 @@ def bbhx_fd(ifos=None, run_phenomd=True,
         )
 
     elif ref_frame == 'SSB':
-        t_ref = params['tc_ssb']
+        t_ref = params['tc_ssb'] + t_offset * YRSID_SI
         lam = params['eclipticlongitude']
         beta = params['eclipticlatitude']
         psi = params['polarization_ssb']
@@ -103,7 +103,7 @@ def bbhx_fd(ifos=None, run_phenomd=True,
             lam,
             beta,
             psi,
-            t_offset
+            0
         )
     else:
         err_msg = f"Don't recognise reference frame {ref_frame}. "
