@@ -78,19 +78,20 @@ def bbhx_fd(ifos=None, run_phenomd=True,
     t_obs_start = params['t_obs_start'] # in seconds
 
     if ref_frame == 'LISA':
-        t_ref = params['tc_lisa']
+        t_ref = params['tc_lisa'] # doesn't include offset
         lam = params['eclipticlongitude_lisa']
         beta = params['eclipticlatitude_lisa']
         psi = params['polarization_lisa']
-        t_ref_lisa = t_ref
         # Transform to SSB frame
         t_ref, lam, beta, psi = LISA_to_SSB(
-            t_ref_lisa,
+            t_ref,
             lam,
             beta,
             psi,
             t_offset
         )
+        t_ref_lisa = t_ref + t_offset*YRSID_SI # includes offset
+
     elif ref_frame == 'SSB':
         t_ref = params['tc_ssb']
         lam = params['eclipticlongitude']
