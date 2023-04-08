@@ -4,9 +4,7 @@ import numpy as np
 from scipy.interpolate import interp1d
 from bbhx.utils.constants import MTSUN_SI, YRSID_SI
 from bbhx.waveformbuild import BBHWaveformFD
-# from bbhx.utils.transform import LISA_to_SSB, SSB_to_LISA
-from pycbc.coordinates import lisa_to_ssb as LISA_to_SSB
-from pycbc.coordinates import ssb_to_lisa as SSB_to_LISA
+from pycbc.coordinates import lisa_to_ssb, ssb_to_lisa
 
 
 @functools.lru_cache(maxsize=128)
@@ -74,36 +72,35 @@ def bbhx_fd(ifos=None, run_phenomd=True,
     dist = pnutils.megaparsecs_to_meters(params['distance'])
     phi_ref = params['coa_phase']
     f_ref = 0 # This is now NOT standard LAL convention!
-    t_offset = params['t_offset'] # in years
+    t_offset = params['t_offset'] # in seconds
     t_obs_start = params['t_obs_start'] # in seconds
 
     if ref_frame == 'LISA':
-        t_ref_lisa = params['tc_lisa'] + t_offset * YRSID_SI
+        t_ref_lisa = params['tc_lisa'] + t_offset
         lam = params['eclipticlongitude_lisa']
         beta = params['eclipticlatitude_lisa']
         psi = params['polarization_lisa']
         # Transform to SSB frame
-        t_ref, lam, beta, psi = LISA_to_SSB(
-            t_ref_lisa,
-            lam,
-            beta,
-            psi,
-            0
+        t_ref, lam, beta, psi = lisa_to_ssb(
+            t_lisa=t_ref_lisa,
+            lamda_lisa=lam,
+            beta_lisa=beta,
+            psi_lisa=psi,
+            t0=0
         )
-
     elif ref_frame == 'SSB':
-        t_ref = params['tc_ssb'] + t_offset * YRSID_SI
+        t_ref = params['tc_ssb'] + t_offset
         lam = params['eclipticlongitude']
         beta = params['eclipticlatitude']
         psi = params['polarization_ssb']
         # Don't need to update variable names,
         # because wave_gen receives parameters in SSB frame.
-        t_ref_lisa, _, _, _ = SSB_to_LISA(
-            t_ref,
-            lam,
-            beta,
-            psi,
-            0
+        t_ref_lisa, _, _, _ = ssb_to_lisa(
+            t_ssb=t_ref,
+            lamda_ssb=lam,
+            beta_ssb=beta,
+            psi_ssb=psi,
+            t0=0
         )
     else:
         err_msg = f"Don't recognise reference frame {ref_frame}. "
@@ -183,7 +180,7 @@ def bbhx_fd(ifos=None, run_phenomd=True,
             output[channel] = FrequencySeries(
                 wave[tdi_num],
                 delta_f=df,
-                epoch=t_ref_lisa - t_offset * YRSID_SI - loc_of_signal_merger_within_wave,
+                epoch=t_ref_lisa - t_offset - loc_of_signal_merger_within_wave,
                 copy=False
             )
     else:
