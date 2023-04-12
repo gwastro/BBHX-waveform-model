@@ -189,6 +189,8 @@ def bbhx_fd(ifos=None, run_phenomd=True,
                 epoch=t_ref_lisa - t_offset - loc_of_signal_merger_within_wave,
                 copy=False
             )
+            # move the merge to the end of the vector
+            output[channel] = output[channel].cyclic_time_shift(loc_of_signal_merger_within_wave)
     else:
         for channel, tdi_num in wanted.items():
             output[channel] = Array(wave[tdi_num], copy=False)
