@@ -70,8 +70,8 @@ def bbhx_fd(ifos=None, run_phenomd=True,
     a2 = params['spin2z']
     inc = params['inclination']
     dist = pnutils.megaparsecs_to_meters(params['distance'])
-    phi_ref = params['coa_phase']
-    f_ref = 0 # This is now NOT standard LAL convention!
+    f_ref = params['f_ref']
+    phi_ref = params['coa_phase'] # phase at f_ref
     t_offset = params['t_offset'] # in seconds
     t_obs_start = params['t_obs_start'] # in seconds
 
@@ -172,9 +172,16 @@ def bbhx_fd(ifos=None, run_phenomd=True,
     output = {}
     # Convert outputs to PyCBC arrays
     if sample_points is None:
-        length_of_wave = t_obs_start
+        if 'delta_f' in params:
+            # In PyCBC, get_td_waveform_from_fd or _base_get_td_waveform_from_fd
+            # will set nparams['delta_f'] = 1.0 / fudge_duration, and this is not
+            # same as 1 / t_obs_start.
+            df = params['delta_f']
+        else:
+            df = 1 / t_obs_start
+
+        length_of_wave = 1 / df
         loc_of_signal_merger_within_wave = t_ref_lisa % length_of_wave
-        df = 1 / t_obs_start
 
         for channel, tdi_num in wanted.items():
             output[channel] = FrequencySeries(
