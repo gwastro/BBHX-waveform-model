@@ -135,10 +135,17 @@ def bbhx_fd(ifos=None, run_phenomd=True,
     wave_gen = get_waveform_genner(log_mf_min, run_phenomd=run_phenomd)
 
     if sample_points is None:
+        if 'delta_f' in params:
+            # In PyCBC, get_td_waveform_from_fd or _base_get_td_waveform_from_fd
+            # will set nparams['delta_f'] = 1.0 / fudge_duration, and this is not
+            # same as 1 / t_obs_start.
+            df = params['delta_f']
+        else:
+            df = 1 / t_obs_start
         # It's likely this will be called repeatedly with the same values
         # in many applications.
         if 'f_final' in params and params['f_final'] != 0:
-            freqs = cached_arange(0, params['f_final'], 1/t_obs_start)
+            freqs = cached_arange(0, params['f_final'], df)
         else:
             raise Exception("Please set 'f_final' in **params.")
     else:
@@ -172,14 +179,6 @@ def bbhx_fd(ifos=None, run_phenomd=True,
     output = {}
     # Convert outputs to PyCBC arrays
     if sample_points is None:
-        if 'delta_f' in params:
-            # In PyCBC, get_td_waveform_from_fd or _base_get_td_waveform_from_fd
-            # will set nparams['delta_f'] = 1.0 / fudge_duration, and this is not
-            # same as 1 / t_obs_start.
-            df = params['delta_f']
-        else:
-            df = 1 / t_obs_start
-
         length_of_wave = 1 / df
         loc_of_signal_merger_within_wave = t_ref_lisa % length_of_wave
 
