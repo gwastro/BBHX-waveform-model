@@ -76,10 +76,10 @@ def bbhx_fd(ifos=None, run_phenomd=True,
     t_obs_start = params['t_obs_start'] # in seconds
 
     if ref_frame == 'LISA':
-        t_ref_lisa = params['tc_lisa'] + t_offset
-        lam = params['eclipticlongitude_lisa']
-        beta = params['eclipticlatitude_lisa']
-        psi = params['polarization_lisa']
+        t_ref_lisa = params['tc'] + t_offset
+        lam = params['eclipticlongitude']
+        beta = params['eclipticlatitude']
+        psi = params['polarization']
         # Transform to SSB frame
         t_ref, lam, beta, psi = lisa_to_ssb(
             t_lisa=t_ref_lisa,
@@ -89,10 +89,10 @@ def bbhx_fd(ifos=None, run_phenomd=True,
             t0=0
         )
     elif ref_frame == 'SSB':
-        t_ref = params['tc_ssb'] + t_offset
+        t_ref = params['tc'] + t_offset
         lam = params['eclipticlongitude']
         beta = params['eclipticlatitude']
-        psi = params['polarization_ssb']
+        psi = params['polarization']
         # Don't need to update variable names,
         # because wave_gen receives parameters in SSB frame.
         t_ref_lisa, _, _, _ = ssb_to_lisa(
@@ -195,5 +195,8 @@ def bbhx_fd(ifos=None, run_phenomd=True,
     else:
         for channel, tdi_num in wanted.items():
             output[channel] = Array(wave[tdi_num], copy=False)
+            if t_offset != 0:
+                # subtract t_offset from FD waveform
+                output[channel] *= np.exp(2j*np.pi*sample_points*t_offset)
 
     return output
