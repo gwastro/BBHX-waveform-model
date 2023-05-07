@@ -186,12 +186,21 @@ def bbhx_fd(ifos=None, run_phenomd=True,
             output[channel] = FrequencySeries(
                 wave[tdi_num],
                 delta_f=df,
-                epoch=t_ref_lisa - t_offset - loc_of_signal_merger_within_wave,
+                epoch=t_ref_lisa - loc_of_signal_merger_within_wave,
                 copy=False
             )
             # move the merge to the end of the vector
             output[channel] = output[channel].cyclic_time_shift(
                 length_of_wave - loc_of_signal_merger_within_wave)
+            output[channel].start_time -= t_offset
+        import matplotlib.pyplot as plt
+        td = output['LISA_A'].to_timeseries()
+        plt.plot(td.sample_times, td)
+        plt.vlines(x=t_ref_lisa-t_offset, ymin=-3e-17, ymax=3e-17, colors='red', linestyles='dashed', label='tL')
+        plt.vlines(x=params['tc'], ymin=-3e-17, ymax=3e-17, colors='k', linestyles='dashed', label='tSSB')
+        plt.xlim(td.sample_times[0], td.sample_times[200])
+        plt.legend()
+        plt.show()
     else:
         for channel, tdi_num in wanted.items():
             output[channel] = Array(wave[tdi_num], copy=False)
