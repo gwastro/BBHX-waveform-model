@@ -66,20 +66,20 @@ def bbhx_fd(ifos=None, run_phenomd=True,
 
     m1 = np.float64(params['mass1'])
     m2 = np.float64(params['mass2'])
-    a1 = params['spin1z']
-    a2 = params['spin2z']
-    inc = params['inclination']
-    dist = pnutils.megaparsecs_to_meters(params['distance'])
-    f_ref = params['f_ref']
-    phi_ref = params['coa_phase'] # phase at f_ref
-    t_offset = params['t_offset'] # in seconds
-    t_obs_start = params['t_obs_start'] # in seconds
+    a1 = np.float64(params['spin1z'])
+    a2 = np.float64(params['spin2z'])
+    inc = np.float64(params['inclination'])
+    dist = np.float64(pnutils.megaparsecs_to_meters(params['distance']))
+    f_ref = np.float64(params['f_ref'])
+    phi_ref = np.float64(params['coa_phase']) # phase at f_ref
+    t_offset = np.float64(params['t_offset']) # in seconds
+    t_obs_start = np.float64(params['t_obs_start']) # in seconds
 
     if ref_frame == 'LISA':
-        t_ref_lisa = params['tc'] + t_offset
-        lam = params['eclipticlongitude']
-        beta = params['eclipticlatitude']
-        psi = params['polarization']
+        t_ref_lisa = np.float64(params['tc']) + t_offset
+        lam = np.float64(params['eclipticlongitude'])
+        beta = np.float64(params['eclipticlatitude'])
+        psi = np.float64(params['polarization'])
         # Transform to SSB frame
         t_ref, lam, beta, psi = lisa_to_ssb(
             t_lisa=t_ref_lisa,
@@ -89,10 +89,10 @@ def bbhx_fd(ifos=None, run_phenomd=True,
             t0=0
         )
     elif ref_frame == 'SSB':
-        t_ref = params['tc'] + t_offset
-        lam = params['eclipticlongitude']
-        beta = params['eclipticlatitude']
-        psi = params['polarization']
+        t_ref = np.float64(params['tc']) + t_offset
+        lam = np.float64(params['eclipticlongitude'])
+        beta = np.float64(params['eclipticlatitude'])
+        psi = np.float64(params['polarization'])
         # Don't need to update variable names,
         # because wave_gen receives parameters in SSB frame.
         t_ref_lisa, _, _, _ = ssb_to_lisa(
@@ -116,7 +116,7 @@ def bbhx_fd(ifos=None, run_phenomd=True,
         else:
             f_min = tf_track(t_obs_start) # in Hz
     else:
-        f_min = params['f_lower'] # in Hz
+        f_min = np.float64(params['f_lower']) # in Hz
         tf_track = interpolated_tf(m1, m2)
         t_max = chirptime(m1=m1, m2=m2, f_lower=1e-4)
         if t_obs_start > t_max:
@@ -139,13 +139,13 @@ def bbhx_fd(ifos=None, run_phenomd=True,
             # In PyCBC, get_td_waveform_from_fd or _base_get_td_waveform_from_fd
             # will set nparams['delta_f'] = 1.0 / fudge_duration, and this is not
             # same as 1 / t_obs_start.
-            df = params['delta_f']
+            df = np.float64(params['delta_f'])
         else:
             df = 1 / t_obs_start
         # It's likely this will be called repeatedly with the same values
         # in many applications.
         if 'f_final' in params and params['f_final'] != 0:
-            freqs = cached_arange(0, params['f_final'], df)
+            freqs = cached_arange(0, np.float64(params['f_final']), df)
         else:
             raise Exception("Please set 'f_final' in **params.")
     else:
@@ -193,14 +193,6 @@ def bbhx_fd(ifos=None, run_phenomd=True,
             output[channel] = output[channel].cyclic_time_shift(
                 length_of_wave - loc_of_signal_merger_within_wave)
             output[channel].start_time -= t_offset
-        import matplotlib.pyplot as plt
-        td = output['LISA_A'].to_timeseries()
-        plt.plot(td.sample_times, td)
-        plt.vlines(x=t_ref_lisa-t_offset, ymin=-3e-17, ymax=3e-17, colors='red', linestyles='dashed', label='tL')
-        plt.vlines(x=params['tc'], ymin=-3e-17, ymax=3e-17, colors='k', linestyles='dashed', label='tSSB')
-        plt.xlim(td.sample_times[0], td.sample_times[200])
-        plt.legend()
-        plt.show()
     else:
         for channel, tdi_num in wanted.items():
             output[channel] = Array(wave[tdi_num], copy=False)
