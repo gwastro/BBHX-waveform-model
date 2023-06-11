@@ -83,9 +83,9 @@ def bbhx_fd(ifos=None, run_phenomd=True,
         # Transform to SSB frame
         t_ref, lam, beta, psi = lisa_to_ssb(
             t_lisa=t_ref_lisa,
-            lamda_lisa=lam,
-            beta_lisa=beta,
-            psi_lisa=psi,
+            longitude_lisa=lam,
+            latitude_lisa=beta,
+            polarization_lisa=psi,
             t0=0
         )
     elif ref_frame == 'SSB':
@@ -97,9 +97,9 @@ def bbhx_fd(ifos=None, run_phenomd=True,
         # because wave_gen receives parameters in SSB frame.
         t_ref_lisa, _, _, _ = ssb_to_lisa(
             t_ssb=t_ref,
-            lamda_ssb=lam,
-            beta_ssb=beta,
-            psi_ssb=psi,
+            longitude_ssb=lam,
+            latitude_ssb=beta,
+            polarization_ssb=psi,
             t0=0
         )
     else:
