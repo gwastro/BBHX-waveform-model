@@ -160,8 +160,13 @@ def bbhx_fd(ifos=None, run_phenomd=True,
     else:
         freqs = sample_points
 
-    modes = [(2,2)] # More modes if not phenomd
-    direct = False # See the BBHX documentation
+    compress=True
+    modes = [(2,2)]
+    direct = False
+    if not run_phenomd:
+        modes = params['modes'] # More modes if not phenomd
+        compress = False #  If True, combine harmonics into single channel waveforms. (Default: True)
+        direct = True # If True, directly compute the waveform without interpolation. (Default: False)
     fill = True # See the BBHX documentation
     squeeze = True # See the BBHX documentation
     length = 1024 # An internal generation parameter, not an output parameter
@@ -173,8 +178,9 @@ def bbhx_fd(ifos=None, run_phenomd=True,
                     beta, psi, t_ref, freqs=freqs,
                     modes=modes, direct=direct, fill=fill, squeeze=squeeze,
                     length=length, t_obs_start=t_obs_start/YRSID_SI,
-                    t_obs_end=t_obs_end,
-                    shift_t_limits=shift_t_limits)[0]
+                    t_obs_end=t_obs_end, compress=compress,
+                    shift_t_limits=shift_t_limits) # Remeber that there was a [0] previously!
+
 
     wanted = {}
 
