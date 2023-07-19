@@ -8,11 +8,13 @@ from bbhx.utils.transform import LISA_to_SSB, SSB_to_LISA
 
 
 @functools.lru_cache(maxsize=128)
-def get_waveform_genner(log_mf_min, run_phenomd=True):
+def get_waveform_genner(log_mf_min, run_phenomd=True, use_gpu=False):
     # See below where this function is called for description of how we handle
     # log_mf_min.
     mf_min = math.exp(log_mf_min/25.)
-    wave_gen = BBHWaveformFD(amp_phase_kwargs=dict(run_phenomd=run_phenomd, mf_min=mf_min))
+    wave_gen = BBHWaveformFD(amp_phase_kwargs=dict(run_phenomd=run_phenomd,
+                                                   mf_min=mf_min),
+                             use_gpu=use_gpu)
     return wave_gen
 
 @functools.lru_cache(maxsize=10)
@@ -45,7 +47,7 @@ def imr_duration(**params):
     return time_length * 1.1
 
 def interpolated_tf(m1, m2):
-    # Using findchirp_chirptime in PyCBC to calculate 
+    # Using findchirp_chirptime in PyCBC to calculate
     # the time-frequency track of dominant mode to get
     # the corresponding `f_min` for `t_obs_start`.
     freq_array = np.logspace(-4, 0, num=10)
@@ -55,7 +57,7 @@ def interpolated_tf(m1, m2):
     tf_track = interp1d(t_array, freq_array)
     return tf_track
 
-def bbhx_fd(ifos=None, run_phenomd=True,
+def bbhx_fd(ifos=None, run_phenomd=True, use_gpu=False,
             ref_frame='LISA', sample_points=None, **params):
 
     if ifos is None:
@@ -104,7 +106,8 @@ def bbhx_fd(ifos=None, run_phenomd=True,
     # frequency. The factor of 25 ensures reasonable spacing while doing this.
     # So we round down to the nearest 1/25 of the logarithm of the frequency
     log_mf_min = int(math.log(f_min*MTSUN_SI*(m1+m2)) * 25)
-    wave_gen = get_waveform_genner(log_mf_min, run_phenomd=run_phenomd)
+    wave_gen = get_waveform_genner(log_mf_min, run_phenomd=run_phenomd,
+                                   use_gpu=use_gpu)
 
     if ref_frame == 'LISA':
         t_ref_lisa = t_ref
