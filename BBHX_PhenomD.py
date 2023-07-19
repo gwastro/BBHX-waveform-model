@@ -140,26 +140,32 @@ def bbhx_fd(ifos=None, run_phenomd=True, use_gpu=False,
     else:
         freqs = sample_points
 
-    compress=True
-    modes = [(2,2)]
-    direct = False
-    if not run_phenomd:
-        modes = params['modes'] # More modes if not phenomd
-        compress = False #  If True, combine harmonics into single channel waveforms. (Default: True)
-        direct = True # If True, directly compute the waveform without interpolation. (Default: False)
+    compress=True #  If True, combine harmonics into single channel waveforms. (Default: True)
+    direct = False # If True, directly compute the waveform without interpolation. (Default: False)
     fill = True # See the BBHX documentation
     squeeze = True # See the BBHX documentation
     length = 1024 # An internal generation parameter, not an output parameter
     shift_t_limits = False # Times are relative to merger
     t_obs_end = 0.0 # Generates ringdown as well!
-
-    wave = wave_gen(m1, m2, a1, a2,
-                    dist, phi_ref, f_ref, inc, lam,
-                    beta, psi, t_ref, freqs=freqs,
-                    modes=modes, direct=direct, fill=fill, squeeze=squeeze,
-                    length=length, t_obs_start=t_obs_start/YRSID_SI,
-                    t_obs_end=t_obs_end, compress=compress,
-                    shift_t_limits=shift_t_limits) # Remeber that there was a [0] previously!
+    if not run_phenomd:
+        modes = params['modes'] # More modes if not phenomd
+        compress = False
+        direct = True
+        wave = wave_gen(m1, m2, a1, a2,
+                        dist, phi_ref, f_ref, inc, lam,
+                        beta, psi, t_ref, freqs=freqs,
+                        modes=modes, direct=direct, fill=fill, squeeze=squeeze,
+                        length=length, t_obs_start=t_obs_start/YRSID_SI,
+                        t_obs_end=t_obs_end, compress=compress,
+                        shift_t_limits=shift_t_limits) # Remeber that there was a [0] previously!
+    else:
+        wave = wave_gen(m1, m2, a1, a2,
+                        dist, phi_ref, f_ref, inc, lam,
+                        beta, psi, t_ref, freqs=freqs, direct=direct,
+                        fill=fill, squeeze=squeeze, length=length,
+                        t_obs_start=t_obs_start/YRSID_SI,
+                        t_obs_end=t_obs_end, compress=compress,
+                        shift_t_limits=shift_t_limits)[0]
 
 
     wanted = {}
