@@ -170,7 +170,15 @@ def bbhx_fd(ifos=None, run_phenomd=True, use_gpu=False,
     length = 1024 # An internal generation parameter, not an output parameter
     shift_t_limits = False # Times are relative to merger
     t_obs_end = 0.0 # Generates ringdown as well!
-    if not run_phenomd:
+    if run_phenomd:
+        wave = wave_gen(m1, m2, a1, a2,
+                        dist, phi_ref, f_ref, inc, lam,
+                        beta, psi, t_ref, freqs=freqs, direct=direct,
+                        fill=fill, squeeze=squeeze, length=length,
+                        t_obs_start=t_obs_start/YRSID_SI,
+                        t_obs_end=t_obs_end, compress=compress,
+                        shift_t_limits=shift_t_limits)[0]
+    else:
         modes = params['modes'] # More modes if not phenomd
         compress = False
         direct = True
@@ -181,14 +189,6 @@ def bbhx_fd(ifos=None, run_phenomd=True, use_gpu=False,
                         length=length, t_obs_start=t_obs_start/YRSID_SI,
                         t_obs_end=t_obs_end, compress=compress,
                         shift_t_limits=shift_t_limits) # Remeber that there was a [0] previously!
-    else:
-        wave = wave_gen(m1, m2, a1, a2,
-                        dist, phi_ref, f_ref, inc, lam,
-                        beta, psi, t_ref, freqs=freqs, direct=direct,
-                        fill=fill, squeeze=squeeze, length=length,
-                        t_obs_start=t_obs_start/YRSID_SI,
-                        t_obs_end=t_obs_end, compress=compress,
-                        shift_t_limits=shift_t_limits)[0]
 
 
     wanted = {}
