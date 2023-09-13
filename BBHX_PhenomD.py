@@ -44,16 +44,22 @@ def imr_duration(**params):
         time_length = params['t_obs_start']
     return time_length * 1.1
 
+
+# Value to be used if no f_lower information is provided, and a limit for
+# things like interpolation
+_MINIMUM_FLOWER = 1E-6
+_LOG_MINIMUM_FLOWER = -6
+
+
 def interpolated_tf(m1, m2):
     # Using findchirp_chirptime in PyCBC to calculate 
     # the time-frequency track of dominant mode to get
     # the corresponding `f_min` for `t_obs_start`.
-    freq_array = np.logspace(-4, 0, num=10)
-    t_array = np.zeros(len(freq_array))
-    for i in range(len(freq_array)):
-        t_array[i] = chirptime(m1=m1, m2=m2, f_lower=freq_array[i])
+    freq_array = np.logspace(_LOG_MINIMUM_FLOWER, 0, num=200)
+    t_array = chirptime(m1=m1, m2=m2, f_lower=freq_array)
     tf_track = interp1d(t_array, freq_array)
     return tf_track
+
 
 def bbhx_fd(ifos=None, run_phenomd=True,
             ref_frame='LISA', sample_points=None, **params):
@@ -117,18 +123,18 @@ def bbhx_fd(ifos=None, run_phenomd=True,
     if ('f_lower' not in params) or (params['f_lower'] < 0):
         # the default value of 'f_lower' in PyCBC is -1.
         tf_track = interpolated_tf(m1, m2)
-        t_max = chirptime(m1=m1, m2=m2, f_lower=1e-4)
+        t_max = chirptime(m1=m1, m2=m2, f_lower=_MINIMUM_FLOWER)
         if t_obs_start > t_max:
             # Avoid "above the interpolation range" issue.
-            f_min = 1e-4
+            f_min = _MINIMUM_FLOWER
         else:
             f_min = tf_track(t_obs_start) # in Hz
     else:
         f_min = np.float64(params['f_lower']) # in Hz
         tf_track = interpolated_tf(m1, m2)
-        t_max = chirptime(m1=m1, m2=m2, f_lower=1e-4)
+        t_max = chirptime(m1=m1, m2=m2, f_lower=_MINIMUM_FLOWER)
         if t_obs_start > t_max:
-            f_min_tobs = 1e-4
+            f_min_tobs = _MINIMUM_FLOWER
         else:
             f_min_tobs = tf_track(t_obs_start) # in Hz
         if f_min < f_min_tobs:
