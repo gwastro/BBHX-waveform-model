@@ -135,8 +135,9 @@ def bbhx_fd(ifos=None, run_phenomd=True,
     wave_gen = get_waveform_genner(log_mf_min, run_phenomd=run_phenomd)
 
     if sample_points is None:
-        if 'delta_f' in params:
-            # In PyCBC, get_td_waveform_from_fd or _base_get_td_waveform_from_fd
+        if 'delta_f' in params and params['delta_f'] > 0:
+            # In PyCBC, default value for `delta_f` is -1.
+            # Besides, soget_td_waveform_from_fd or _base_get_td_waveform_from_fd
             # will set nparams['delta_f'] = 1.0 / fudge_duration, and this is not
             # same as 1 / t_obs_start.
             df = np.float64(params['delta_f'])
