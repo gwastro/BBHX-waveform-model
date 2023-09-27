@@ -142,7 +142,7 @@ def bbhx_fd(ifos=None, run_phenomd=True,
             # same as 1 / t_obs_start.
             df = np.float64(params['delta_f'])
         else:
-            df = 1 / t_obs_start
+            raise Exception("Please set 'delta_f' in **params.")
         # It's likely this will be called repeatedly with the same values
         # in many applications.
         if 'f_final' in params and params['f_final'] != 0:
@@ -194,6 +194,9 @@ def bbhx_fd(ifos=None, run_phenomd=True,
             output[channel] = output[channel].cyclic_time_shift(
                 length_of_wave - loc_of_signal_merger_within_wave)
             output[channel].start_time -= t_offset
+            # output[channel].epoch -= t_offset
+            print("epoch: ", t_ref_lisa - loc_of_signal_merger_within_wave)
+            print("start_time: ", output[channel].start_time)
     else:
         for channel, tdi_num in wanted.items():
             output[channel] = Array(wave[tdi_num], copy=False)
