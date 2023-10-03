@@ -163,14 +163,20 @@ def bbhx_fd(ifos=None, run_phenomd=True, use_gpu=False,
     else:
         freqs = sample_points
 
-    compress=True #  If True, combine harmonics into single channel waveforms. (Default: True)
+    # If creating injection of many modes, or just single, compress = True
+    # will do the same thing.
+    compress = True #  If True, combine harmonics into single channel waveforms. (Default: True)
+    # Need to give length if direct = False.
     direct = False # If True, directly compute the waveform without interpolation. (Default: False)
     fill = True # See the BBHX documentation
     squeeze = True # See the BBHX documentation
     length = 1024 # An internal generation parameter, not an output parameter
     shift_t_limits = False # Times are relative to merger
     t_obs_end = 0.0 # Generates ringdown as well!
+    modes = params['modes'] # More modes if not phenomd
+
     if run_phenomd:
+        # Of run_phenomd, modes is automatically set to (2,2).
         wave = wave_gen(m1, m2, a1, a2,
                         dist, phi_ref, f_ref, inc, lam,
                         beta, psi, t_ref, freqs=freqs, direct=direct,
@@ -179,17 +185,19 @@ def bbhx_fd(ifos=None, run_phenomd=True, use_gpu=False,
                         t_obs_end=t_obs_end, compress=compress,
                         shift_t_limits=shift_t_limits)[0]
     else:
+        # This should work with both generating entire injections with
+        # multiple modes and when computing single modes for inference.
+        # This will NOT work when wanting the mode information seperately.
+        # If you want all modes seperated out, the final [0] needs to be
+        # removed as that is the A TDI stream.
         modes = params['modes'] # More modes if not phenomd
-        compress = False
-        direct = True
         wave = wave_gen(m1, m2, a1, a2,
                         dist, phi_ref, f_ref, inc, lam,
                         beta, psi, t_ref, freqs=freqs,
                         modes=modes, direct=direct, fill=fill, squeeze=squeeze,
                         length=length, t_obs_start=t_obs_start/YRSID_SI,
                         t_obs_end=t_obs_end, compress=compress,
-                        shift_t_limits=shift_t_limits) # Remeber that there was a [0] previously!
-
+                        shift_t_limits=shift_t_limits)[0]
 
     wanted = {}
 
