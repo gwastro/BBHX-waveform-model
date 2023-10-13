@@ -57,15 +57,18 @@ def interpolated_tf(m1, m2):
     tf_track = interp1d(t_array, freq_array)
     return tf_track
 
-def bbhx_fd(ifos=None, run_phenomd=True, use_gpu=False,
+
+
+# For now, always run phenom=False
+def bbhx_fd(ifos=None, run_phenomd=False, use_gpu=False,
             ref_frame='LISA', sample_points=None, **params):
 
     if ifos is None:
         raise Exception("Must define data streams to compute")
 
     # If asking for anything but the (2,2) mode, run PhenomHM
-    if params['modes'] != [(2, 2)]:
-        run_phenomd = False
+    # if params['modes'] != [(2, 2)]:
+    #     run_phenomd = False
 
     from pycbc.types import FrequencySeries, Array
     from pycbc import pnutils
@@ -166,6 +169,11 @@ def bbhx_fd(ifos=None, run_phenomd=True, use_gpu=False,
             raise Exception("Please set 'f_final' in **params.")
     else:
         freqs = sample_points
+
+    if params['modes'] == 22.0:
+        params['modes'] = [(2,2)]
+    elif params['modes'] == 33.0:
+        params['modes'] = [(3,3)]
 
     # If creating injection of many modes, or just single, compress = True
     # will do the same thing.
