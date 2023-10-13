@@ -194,6 +194,7 @@ def bbhx_fd(ifos=None, run_phenomd=True,
             output[channel] = output[channel].cyclic_time_shift(
                 length_of_wave - loc_of_signal_merger_within_wave)
             output[channel].start_time -= t_offset
+            # output[channel].epoch -= t_offset
     else:
         for channel, tdi_num in wanted.items():
             output[channel] = Array(wave[tdi_num], copy=False)
