@@ -147,6 +147,8 @@ def bbhx_fd(ifos=None, run_phenomd=False, use_gpu=False,
     else:
         freqs = sample_points
 
+    # freqs = np.load('/home/connor/main/higher_modes_dev/likelihood_testing/freq.npy')
+
     if params['modes'] == 22.0:
         params['modes'] = [(2,2)]
     elif params['modes'] == 33.0:
