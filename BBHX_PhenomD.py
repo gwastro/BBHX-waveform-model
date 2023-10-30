@@ -4,7 +4,7 @@ import numpy as np
 from scipy.interpolate import interp1d
 from bbhx.utils.constants import MTSUN_SI, YRSID_SI
 from bbhx.waveformbuild import BBHWaveformFD
-from pycbc.coordinates import lisa_to_ssb, ssb_to_lisa
+from pycbc.coordinates import TIME_OFFSET_20_DEGREES, lisa_to_ssb, ssb_to_lisa
 
 
 @functools.lru_cache(maxsize=128)
@@ -72,7 +72,12 @@ def bbhx_fd(ifos=None, run_phenomd=True,
     dist = np.float64(pnutils.megaparsecs_to_meters(params['distance']))
     f_ref = np.float64(params['f_ref'])
     phi_ref = np.float64(params['coa_phase']) # phase at f_ref
-    t_offset = np.float64(params['t_offset']) # in seconds
+    if 't_offset' in params:
+        t_offset = np.float64(params['t_offset']) # in seconds
+    else:
+        raise Exception("Must set `t_offset`, if you don't have a preferred value, \
+                        please set it to be the default value %f, which will put LISA behind \
+                        the Earth by ~20 degrees." % TIME_OFFSET_20_DEGREES)
     t_obs_start = np.float64(params['t_obs_start']) # in seconds
 
     if ref_frame == 'LISA':
