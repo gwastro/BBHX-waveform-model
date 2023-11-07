@@ -166,14 +166,6 @@ def bbhx_fd(ifos=None, run_phenomd=False, use_gpu=False,
     else:
         freqs = sample_points
 
-    #freqs = np.load('/home/connor/main/higher_modes_dev/likelihood_testing/freq.npy')
-    print(freqs)
-
-    if params['modes'] == 22.0:
-        params['modes'] = [(2,2)]
-    elif params['modes'] == 33.0:
-        params['modes'] = [(3,3)]
-
     # If creating injection of many modes, or just single, compress = True
     # will do the same thing.
     compress = True #  If True, combine harmonics into single channel waveforms. (Default: True)
@@ -184,8 +176,20 @@ def bbhx_fd(ifos=None, run_phenomd=False, use_gpu=False,
     length = 1024 # An internal generation parameter, not an output parameter
     shift_t_limits = False # Times are relative to merger
     t_obs_end = 0.0 # Generates ringdown as well!
-    modes = params['modes'] # More modes if not phenomd
+    # modes = params['modes'] # More modes if not phenomd
 
+    params['modes'] = float(params['modes'])
+
+    if params['modes'] == 22.0:
+        modes = [(2,2)]
+    elif params['modes'] == 33.0:
+        modes = [(3,3)]
+    elif params['modes'] == 44.0:
+        modes = [(4,4)]
+    elif params['modes'] == 2233.0:
+        modes = [(2,2),(3,3)]
+    elif params['modes'] == 223344.0:
+        modes = [(2,2),(3,3),(4,4)]
 
     # NOTE: This does not allow for the seperation of multiple modes into
     # their own streams.
