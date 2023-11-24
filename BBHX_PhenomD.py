@@ -153,20 +153,29 @@ def bbhx_fd(ifos=None, run_phenomd=False, use_gpu=False,
     length = 1024 # An internal generation parameter, not an output parameter
     shift_t_limits = False # Times are relative to merger
     t_obs_end = 0.0 # Generates ringdown as well!
-    # modes = params['modes'] # More modes if not phenomd
 
     params['modes'] = float(params['modes'])
-
     if params['modes'] == 22.0:
         modes = [(2,2)]
+    elif params['modes'] == 21.0:
+        modes = [(2,1)]
     elif params['modes'] == 33.0:
         modes = [(3,3)]
+    elif params['modes'] == 32.0:
+        modes = [(3,2)]
     elif params['modes'] == 44.0:
         modes = [(4,4)]
+    elif params['modes'] == 43.0:
+        modes = [(4,3)]
     elif params['modes'] == 2233.0:
         modes = [(2,2),(3,3)]
     elif params['modes'] == 223344.0:
         modes = [(2,2),(3,3),(4,4)]
+    elif params['modes'] == 22334443.0:
+        modes = [(2,2),(3,3),(4,4),(4,3)]
+    elif params['modes'] == 223344213243.0:
+        modes = [(2,2),(3,3),(4,4),(2,1),(3,2),(4,3)]
+
 
     # NOTE: This does not allow for the seperation of multiple modes into
     # their own streams.
