@@ -8,13 +8,12 @@ from bbhx.utils.transform import LISA_to_SSB, SSB_to_LISA
 
 
 @functools.lru_cache(maxsize=128)
-def get_waveform_genner(log_mf_min, run_phenomd=True, use_gpu=False):
+def get_waveform_genner(log_mf_min, run_phenomd=True):
     # See below where this function is called for description of how we handle
     # log_mf_min.
     mf_min = math.exp(log_mf_min/25.)
     wave_gen = BBHWaveformFD(amp_phase_kwargs=dict(run_phenomd=run_phenomd,
-                                                   mf_min=mf_min),
-                             use_gpu=use_gpu)
+                                                   mf_min=mf_min))
     return wave_gen
 
 @functools.lru_cache(maxsize=10)
@@ -57,11 +56,15 @@ def interpolated_tf(m1, m2):
     tf_track = interp1d(t_array, freq_array)
     return tf_track
 
+def waveform_setup(**kwargs):
+    if kwargs['approximant'] == "BBHX_PhenomD":
+        kwargs['mode_array'] = [(2, 2)]
+        return _bbhx_fd(**kwargs)
+    elif kwargs['approximant'] == "BBHX_PhenomHM":
+        return _bbhx_fd(run_phenomd=False, **kwargs)
 
-
-# For now, always run phenom=False
-def bbhx_fd(ifos=None, run_phenomd=False, use_gpu=False,
-            ref_frame='LISA', sample_points=None, **params):
+def _bbhx_fd(ifos=None, run_phenomd=True, ref_frame='LISA',
+             sample_points=None, **params):
 
     if ifos is None:
         raise Exception("Must define data streams to compute")
@@ -109,8 +112,7 @@ def bbhx_fd(ifos=None, run_phenomd=False, use_gpu=False,
     # frequency. The factor of 25 ensures reasonable spacing while doing this.
     # So we round down to the nearest 1/25 of the logarithm of the frequency
     log_mf_min = int(math.log(f_min*MTSUN_SI*(m1+m2)) * 25)
-    wave_gen = get_waveform_genner(log_mf_min, run_phenomd=run_phenomd,
-                                   use_gpu=use_gpu)
+    wave_gen = get_waveform_genner(log_mf_min, run_phenomd=run_phenomd)
 
     if ref_frame == 'LISA':
         t_ref_lisa = t_ref
@@ -154,36 +156,15 @@ def bbhx_fd(ifos=None, run_phenomd=False, use_gpu=False,
     shift_t_limits = False # Times are relative to merger
     t_obs_end = 0.0 # Generates ringdown as well!
 
-    params['modes'] = float(params['modes'])
-    if params['modes'] == 22.0:
-        modes = [(2,2)]
-    elif params['modes'] == 21.0:
-        modes = [(2,1)]
-    elif params['modes'] == 33.0:
-        modes = [(3,3)]
-    elif params['modes'] == 32.0:
-        modes = [(3,2)]
-    elif params['modes'] == 44.0:
-        modes = [(4,4)]
-    elif params['modes'] == 43.0:
-        modes = [(4,3)]
-    elif params['modes'] == 2233.0:
-        modes = [(2,2),(3,3)]
-    elif params['modes'] == 223344.0:
-        modes = [(2,2),(3,3),(4,4)]
-    elif params['modes'] == 22334443.0:
-        modes = [(2,2),(3,3),(4,4),(4,3)]
-    elif params['modes'] == 223344213243.0:
-        modes = [(2,2),(3,3),(4,4),(2,1),(3,2),(4,3)]
-
 
     # NOTE: This does not allow for the seperation of multiple modes into
-    # their own streams.
+    # their own streams. All modes requested are combined into one stream.
     wave = wave_gen(m1, m2, a1, a2,
                     dist, phi_ref, f_ref, inc, lam,
                     beta, psi, t_ref, freqs=freqs,
-                    modes=modes, direct=direct, fill=fill, squeeze=squeeze,
-                    length=length, t_obs_start=t_obs_start/YRSID_SI,
+                    modes=params['mode_array'], direct=direct, fill=fill,
+                    squeeze=squeeze, length=length,
+                    t_obs_start=t_obs_start/YRSID_SI,
                     t_obs_end=t_obs_end, compress=compress,
                     shift_t_limits=shift_t_limits)[0]
 
