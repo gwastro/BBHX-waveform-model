@@ -31,12 +31,18 @@ def imr_duration(**params):
     # including merge, ringdown, and aligned spin effects.
     # This is used in the time-domain signal injection in PyCBC.
     import warnings
-    from pycbc.waveform.waveform import imrphenomd_length_in_time
 
     nparams = {'mass1':params['mass1'], 'mass2':params['mass2'],
                'spin1z':params['spin1z'], 'spin2z':params['spin2z'],
                'f_lower':params['f_lower']}
-    time_length = np.float64(imrphenomd_length_in_time(**nparams))
+
+    if params['approximant'] == 'BBHX_IMRPhenomD':
+        from pycbc.waveform.waveform import imrphenomd_length_in_time
+        time_length = np.float64(imrphenomd_length_in_time(**nparams))
+    elif params['approximant'] == 'BBHX_IMRPhenomHM':
+        from pycbc.waveform.waveform import imrphenomhm_length_in_time
+        time_length = np.float64(imrphenomhm_length_in_time(**nparams))
+
     if time_length < 2678400:
         warnings.warn("Waveform duration is too short! Setting it to 1 month (2678400 s).")
         time_length = 2678400
