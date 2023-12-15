@@ -93,8 +93,8 @@ def _bbhx_fd(ifos=None, run_phenomd=True, ref_frame='LISA',
             t_offset = np.float64(params['t_offset']) # in seconds
     else:
         raise Exception("Must set `t_offset`, if you don't have a preferred value, \
-                        please set it to be the default value %f, which will put LISA behind \
-                        the Earth by ~20 degrees." % TIME_OFFSET_20_DEGREES)
+please set it to be the default value %f, which will put LISA behind \
+the Earth by ~20 degrees." % TIME_OFFSET_20_DEGREES)
     t_obs_start = np.float64(params['t_obs_start']) # in seconds
 
     if ref_frame == 'LISA':
