@@ -12,7 +12,8 @@ def get_waveform_genner(log_mf_min, run_phenomd=True):
     # See below where this function is called for description of how we handle
     # log_mf_min.
     mf_min = math.exp(log_mf_min/25.)
-    wave_gen = BBHWaveformFD(amp_phase_kwargs=dict(run_phenomd=run_phenomd, mf_min=mf_min))
+    wave_gen = BBHWaveformFD(amp_phase_kwargs=dict(run_phenomd=run_phenomd,
+                                                   mf_min=mf_min))
     return wave_gen
 
 @functools.lru_cache(maxsize=10)
@@ -30,12 +31,18 @@ def imr_duration(**params):
     # including merge, ringdown, and aligned spin effects.
     # This is used in the time-domain signal injection in PyCBC.
     import warnings
-    from pycbc.waveform.waveform import imrphenomd_length_in_time
 
     nparams = {'mass1':params['mass1'], 'mass2':params['mass2'],
                'spin1z':params['spin1z'], 'spin2z':params['spin2z'],
                'f_lower':params['f_lower']}
-    time_length = np.float64(imrphenomd_length_in_time(**nparams))
+
+    if params['approximant'] == 'BBHX_IMRPhenomD':
+        from pycbc.waveform.waveform import imrphenomd_length_in_time
+        time_length = np.float64(imrphenomd_length_in_time(**nparams))
+    elif params['approximant'] == 'BBHX_IMRPhenomHM':
+        from pycbc.waveform.waveform import imrphenomhm_length_in_time
+        time_length = np.float64(imrphenomhm_length_in_time(**nparams))
+
     if time_length < 2678400:
         warnings.warn("Waveform duration is too short! Setting it to 1 month (2678400 s).")
         time_length = 2678400
@@ -45,7 +52,7 @@ def imr_duration(**params):
     return time_length * 1.1
 
 def interpolated_tf(m1, m2):
-    # Using findchirp_chirptime in PyCBC to calculate 
+    # Using findchirp_chirptime in PyCBC to calculate
     # the time-frequency track of dominant mode to get
     # the corresponding `f_min` for `t_obs_start`.
     freq_array = np.logspace(-4, 0, num=10)
@@ -55,8 +62,15 @@ def interpolated_tf(m1, m2):
     tf_track = interp1d(t_array, freq_array)
     return tf_track
 
-def bbhx_fd(ifos=None, run_phenomd=True,
-            ref_frame='LISA', sample_points=None, **params):
+def waveform_setup(**kwargs):
+    if kwargs['approximant'] == "BBHX_PhenomD":
+        kwargs['mode_array'] = [(2, 2)]
+        return _bbhx_fd(**kwargs)
+    elif kwargs['approximant'] == "BBHX_PhenomHM":
+        return _bbhx_fd(run_phenomd=False, **kwargs)
+
+def _bbhx_fd(ifos=None, run_phenomd=True, ref_frame='LISA',
+             sample_points=None, **params):
 
     if ifos is None:
         raise Exception("Must define data streams to compute")
@@ -76,8 +90,8 @@ def bbhx_fd(ifos=None, run_phenomd=True,
         t_offset = np.float64(params['t_offset']) # in seconds
     else:
         raise Exception("Must set `t_offset`, if you don't have a preferred value, \
-                        please set it to be the default value %f, which will put LISA behind \
-                        the Earth by ~20 degrees." % TIME_OFFSET_20_DEGREES)
+please set it to be the default value %f, which will put LISA behind \
+the Earth by ~20 degrees." % TIME_OFFSET_20_DEGREES)
     t_obs_start = np.float64(params['t_obs_start']) # in seconds
 
     if ref_frame == 'LISA':
@@ -157,20 +171,27 @@ def bbhx_fd(ifos=None, run_phenomd=True,
     else:
         freqs = sample_points
 
-    modes = [(2,2)] # More modes if not phenomd
-    direct = False # See the BBHX documentation
+    # If creating injection of many modes, or just single, compress = True
+    # will do the same thing.
+    compress = True #  If True, combine harmonics into single channel waveforms. (Default: True)
+    # Need to give length if direct = False.
+    direct = False # If True, directly compute the waveform without interpolation. (Default: False)
     fill = True # See the BBHX documentation
     squeeze = True # See the BBHX documentation
     length = 1024 # An internal generation parameter, not an output parameter
     shift_t_limits = False # Times are relative to merger
     t_obs_end = 0.0 # Generates ringdown as well!
 
+
+    # NOTE: This does not allow for the seperation of multiple modes into
+    # their own streams. All modes requested are combined into one stream.
     wave = wave_gen(m1, m2, a1, a2,
                     dist, phi_ref, f_ref, inc, lam,
                     beta, psi, t_ref, freqs=freqs,
-                    modes=modes, direct=direct, fill=fill, squeeze=squeeze,
-                    length=length, t_obs_start=t_obs_start/YRSID_SI,
-                    t_obs_end=t_obs_end,
+                    modes=params['mode_array'], direct=direct, fill=fill,
+                    squeeze=squeeze, length=length,
+                    t_obs_start=t_obs_start/YRSID_SI,
+                    t_obs_end=t_obs_end, compress=compress,
                     shift_t_limits=shift_t_limits)[0]
 
     wanted = {}
