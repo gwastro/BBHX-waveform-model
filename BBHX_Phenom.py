@@ -178,10 +178,10 @@ the Earth by ~20 degrees." % TIME_OFFSET_20_DEGREES)
     # will do the same thing.
     compress = True #  If True, combine harmonics into single channel waveforms. (Default: True)
     # Need to give length if direct = False.
-    direct = False # If True, directly compute the waveform without interpolation. (Default: False)
+    direct = True # If True, directly compute the waveform without interpolation. (Default: False)
     fill = True # See the BBHX documentation
     squeeze = True # See the BBHX documentation
-    length = 1024 * 8 # An internal generation parameter, not an output parameter
+    # length = 1024 * 8 # An internal generation parameter, not an output parameter
     shift_t_limits = False # Times are relative to merger
     t_obs_end = 0.0 # Generates ringdown as well!
 
@@ -192,10 +192,10 @@ the Earth by ~20 degrees." % TIME_OFFSET_20_DEGREES)
                     dist, phi_ref, f_ref, inc, lam,
                     beta, psi, t_ref, freqs=freqs,
                     modes=params['mode_array'], direct=direct, fill=fill,
-                    squeeze=squeeze, length=length,
+                    squeeze=squeeze, # length=length,
                     t_obs_start=t_obs_start/YRSID_SI,
                     t_obs_end=t_obs_end, compress=compress,
-                    shift_t_limits=shift_t_limits)[0]
+                    shift_t_limits=shift_t_limits)
 
     wanted = {}
 
