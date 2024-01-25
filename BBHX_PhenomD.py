@@ -73,7 +73,10 @@ def bbhx_fd(ifos=None, run_phenomd=True,
     f_ref = np.float64(params['f_ref'])
     phi_ref = np.float64(params['coa_phase']) # phase at f_ref
     if 't_offset' in params:
-        t_offset = np.float64(params['t_offset']) # in seconds
+        if params['t_offset'] == 'TIME_OFFSET_20_DEGREES':
+            t_offset = TIME_OFFSET_20_DEGREES
+        else:
+            t_offset = np.float64(params['t_offset']) # in seconds
     else:
         raise Exception("Must set `t_offset`, if you don't have a preferred value, \
                         please set it to be the default value %f, which will put LISA behind \
