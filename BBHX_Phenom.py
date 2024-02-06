@@ -70,6 +70,8 @@ def waveform_setup(**kwargs):
         kwargs['mode_array'] = [(2, 2)]
         return _bbhx_fd(**kwargs)
     elif kwargs['approximant'] == "BBHX_PhenomHM":
+        if 'mode_array' not in kwargs:
+            raise Exception("Must define modes in mode_array")
         return _bbhx_fd(run_phenomd=False, **kwargs)
 
 def _bbhx_fd(ifos=None, run_phenomd=True, ref_frame='LISA',
