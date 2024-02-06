@@ -11,9 +11,12 @@ from pycbc.coordinates import TIME_OFFSET_20_DEGREES, lisa_to_ssb, ssb_to_lisa
 def get_waveform_genner(log_mf_min, run_phenomd=True):
     # See below where this function is called for description of how we handle
     # log_mf_min.
-    mf_min = math.exp(log_mf_min/25.)
-    wave_gen = BBHWaveformFD(amp_phase_kwargs=dict(run_phenomd=run_phenomd,
-                                                   mf_min=mf_min))
+    if log_mf_min is None:
+        wave_gen = BBHWaveformFD(amp_phase_kwargs=dict(run_phenomd=run_phenomd))
+    else:
+        mf_min = math.exp(log_mf_min/25.)
+        wave_gen = BBHWaveformFD(amp_phase_kwargs=dict(run_phenomd=run_phenomd,
+                                                       mf_min=mf_min))
     return wave_gen
 
 @functools.lru_cache(maxsize=10)
@@ -70,7 +73,8 @@ def waveform_setup(**kwargs):
         return _bbhx_fd(run_phenomd=False, **kwargs)
 
 def _bbhx_fd(ifos=None, run_phenomd=True, ref_frame='LISA',
-             sample_points=None, **params):
+             sample_points=None, length=1024, direct=False,
+             min_f=False, **params):
 
     if ifos is None:
         raise Exception("Must define data streams to compute")
@@ -125,32 +129,36 @@ the Earth by ~20 degrees." % TIME_OFFSET_20_DEGREES)
         err_msg = f"Don't recognise reference frame {ref_frame}. "
         err_msg = f"Known frames are 'LISA' and 'SSB'."
 
-    if ('f_lower' not in params) or (params['f_lower'] < 0):
-        # the default value of 'f_lower' in PyCBC is -1.
-        tf_track = interpolated_tf(m1, m2)
-        t_max = chirptime(m1=m1, m2=m2, f_lower=1e-4)
-        if t_obs_start > t_max:
-            # Avoid "above the interpolation range" issue.
-            f_min = 1e-4
+    if min_f:
+        if ('f_lower' not in params) or (params['f_lower'] < 0):
+            # the default value of 'f_lower' in PyCBC is -1.
+            tf_track = interpolated_tf(m1, m2)
+            t_max = chirptime(m1=m1, m2=m2, f_lower=1e-4)
+            if t_obs_start > t_max:
+                # Avoid "above the interpolation range" issue.
+                f_min = 1e-4
+            else:
+                f_min = tf_track(t_obs_start) # in Hz
         else:
-            f_min = tf_track(t_obs_start) # in Hz
-    else:
-        f_min = np.float64(params['f_lower']) # in Hz
-        tf_track = interpolated_tf(m1, m2)
-        t_max = chirptime(m1=m1, m2=m2, f_lower=1e-4)
-        if t_obs_start > t_max:
-            f_min_tobs = 1e-4
-        else:
-            f_min_tobs = tf_track(t_obs_start) # in Hz
-        if f_min < f_min_tobs:
-            err_msg = f"Input 'f_lower' is lower than the value calculated from 't_obs_start'."
+            f_min = np.float64(params['f_lower']) # in Hz
+            tf_track = interpolated_tf(m1, m2)
+            t_max = chirptime(m1=m1, m2=m2, f_lower=1e-4)
+            if t_obs_start > t_max:
+                f_min_tobs = 1e-4
+            else:
+                f_min_tobs = tf_track(t_obs_start) # in Hz
+            if f_min < f_min_tobs:
+                err_msg = f"Input 'f_lower' is lower than the value calculated from 't_obs_start'."
 
-    # We want to cache the waveform generator, but as it takes a mass dependent
-    # start frequency as input this is hard.
-    # To solve this we *round* the *logarithm* of this mass-dependent start
-    # frequency. The factor of 25 ensures reasonable spacing while doing this.
-    # So we round down to the nearest 1/25 of the logarithm of the frequency
-    log_mf_min = int(math.log(f_min*MTSUN_SI*(m1+m2)) * 25)
+        # We want to cache the waveform generator, but as it takes a mass dependent
+        # start frequency as input this is hard.
+        # To solve this we *round* the *logarithm* of this mass-dependent start
+        # frequency. The factor of 25 ensures reasonable spacing while doing this.
+        # So we round down to the nearest 1/25 of the logarithm of the frequency
+        log_mf_min = int(math.log(f_min*MTSUN_SI*(m1+m2)) * 25)
+    else:
+        log_mf_min=None
+
     wave_gen = get_waveform_genner(log_mf_min, run_phenomd=run_phenomd)
 
     if sample_points is None:
@@ -174,25 +182,31 @@ the Earth by ~20 degrees." % TIME_OFFSET_20_DEGREES)
     # If creating injection of many modes, or just single, compress = True
     # will do the same thing.
     compress = True #  If True, combine harmonics into single channel waveforms. (Default: True)
-    # Need to give length if direct = False.
-    direct = False # If True, directly compute the waveform without interpolation. (Default: False)
     fill = True # See the BBHX documentation
     squeeze = True # See the BBHX documentation
-    length = 1024 # An internal generation parameter, not an output parameter
     shift_t_limits = False # Times are relative to merger
     t_obs_end = 0.0 # Generates ringdown as well!
 
-
     # NOTE: This does not allow for the seperation of multiple modes into
     # their own streams. All modes requested are combined into one stream.
-    wave = wave_gen(m1, m2, a1, a2,
-                    dist, phi_ref, f_ref, inc, lam,
-                    beta, psi, t_ref, freqs=freqs,
-                    modes=params['mode_array'], direct=direct, fill=fill,
-                    squeeze=squeeze, length=length,
-                    t_obs_start=t_obs_start/YRSID_SI,
-                    t_obs_end=t_obs_end, compress=compress,
-                    shift_t_limits=shift_t_limits)[0]
+    if direct == 'True' or direct == True:
+        wave = wave_gen(m1, m2, a1, a2,
+                        dist, phi_ref, f_ref, inc, lam,
+                        beta, psi, t_ref, freqs=freqs,
+                        modes=params['mode_array'], direct=True, fill=fill,
+                        squeeze=squeeze, t_obs_start=t_obs_start/YRSID_SI,
+                        t_obs_end=t_obs_end, compress=compress,
+                        shift_t_limits=shift_t_limits)
+    else:
+        # Need to give length if direct = False.
+        wave = wave_gen(m1, m2, a1, a2,
+                        dist, phi_ref, f_ref, inc, lam,
+                        beta, psi, t_ref, freqs=freqs,
+                        modes=params['mode_array'], direct=direct, fill=fill,
+                        squeeze=squeeze, length=int(length),
+                        t_obs_start=t_obs_start/YRSID_SI,
+                        t_obs_end=t_obs_end, compress=compress,
+                        shift_t_limits=shift_t_limits)[0]
 
     wanted = {}
 
