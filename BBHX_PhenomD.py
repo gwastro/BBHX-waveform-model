@@ -218,8 +218,8 @@ def bbhx_fd(ifos=None, run_phenomd=True, tdi='1.5',
         else:
             omega_len = omega_length(f=sample_points, len_arm=2.5e9)
         rescale = 2j*np.sin(2*omega_len)*np.exp(-2j*omega_len)
-        for tdi_wave in output:
-            tdi_wave *= rescale
+        for key in output:
+            output[key] *= rescale
     elif tdi == '1.5':
         pass
     else:
