@@ -55,7 +55,7 @@ def interpolated_tf(m1, m2):
     tf_track = interp1d(t_array, freq_array)
     return tf_track
 
-def bbhx_fd(ifos=None, run_phenomd=True,
+def bbhx_fd(ifos=None, run_phenomd=True, tdi='1.5',
             ref_frame='LISA', sample_points=None, **params):
 
     if ifos is None:
@@ -208,5 +208,21 @@ def bbhx_fd(ifos=None, run_phenomd=True,
             if t_offset != 0:
                 # subtract t_offset from FD waveform
                 output[channel] *= np.exp(2j*np.pi*sample_points*t_offset)
+
+    # convert TDI version
+    if tdi == '2.0':
+        from pycbc.psd.analytical_space import omega_length
+        if sample_points is None:
+            # assume all channels share the same sample_frequencies
+            omega_len = omega_length(f=output[channel].sample_frequencies, len_arm=2.5e9)
+        else:
+            omega_len = omega_length(f=sample_points, len_arm=2.5e9)
+        rescale = 2j*np.sin(2*omega_len)*np.exp(-2j*omega_len)
+        for tdi_wave in output:
+            tdi_wave *= rescale
+    elif tdi == '1.5':
+        pass
+    else:
+        raise Exception("Only support TDI-1.5 and TDI-2.0 for now.")
 
     return output
