@@ -5,6 +5,7 @@ from scipy.interpolate import interp1d
 from bbhx.utils.constants import MTSUN_SI, YRSID_SI
 from bbhx.waveformbuild import BBHWaveformFD
 from pycbc.coordinates import TIME_OFFSET_20_DEGREES, lisa_to_ssb, ssb_to_lisa
+from warnings import warn
 
 
 @functools.lru_cache(maxsize=128)
@@ -19,15 +20,28 @@ def get_waveform_genner(log_mf_min, run_phenomd=True):
                                                        mf_min=mf_min))
     return wave_gen
 
+
 @functools.lru_cache(maxsize=10)
 def cached_arange(start, stop, spacing):
     return np.arange(start, stop, spacing)
 
-def chirptime(m1, m2, f_lower):
+
+def chirptime(m1, m2, f_lower, mode=None):
+    """Compute the chirptime.
+
+    Defaults for the (2,2) mode.
+    """
     from pycbc.waveform.spa_tmplt import findchirp_chirptime
 
+    # Find the (2,2) mode duration
     duration = findchirp_chirptime(m1=m1, m2=m2, fLower=f_lower, porder=7)
+    # If a mode is specified, convert to that mode
+    if mode is not None:
+        # See https://arxiv.org/abs/2005.08830, eqs. 2-3
+        factor = (2 / (mode[1])) ** (-8 / 3)
+        duration *= factor
     return duration
+
 
 def imr_duration(**params):
     # More accurate duration (within LISA frequency band) of the waveform,
@@ -54,16 +68,23 @@ def imr_duration(**params):
         time_length = params['t_obs_start']
     return time_length * 1.1
 
-def interpolated_tf(m1, m2):
+
+def interpolated_tf(m1, m2, mode=None):
+    """Interpolate the time frequency-track.
+
+    Defaults to the dominant (2,2) mode and uses :code:`chirptime` to compute
+    the track.
+    """
     # Using findchirp_chirptime in PyCBC to calculate
     # the time-frequency track of dominant mode to get
     # the corresponding `f_min` for `t_obs_start`.
     freq_array = np.logspace(-4, 0, num=10)
     t_array = np.zeros(len(freq_array))
     for i in range(len(freq_array)):
-        t_array[i] = chirptime(m1=m1, m2=m2, f_lower=freq_array[i])
+        t_array[i] = chirptime(m1=m1, m2=m2, f_lower=freq_array[i], mode=mode)
     tf_track = interp1d(t_array, freq_array)
     return tf_track
+
 
 def waveform_setup(**kwargs):
     if kwargs['approximant'] == "BBHX_PhenomD":
@@ -74,9 +95,16 @@ def waveform_setup(**kwargs):
             kwargs['mode_array'] = [(2, 2), (2, 1), (3, 3), (3, 2), (4, 4), (4, 3)]
         return _bbhx_fd(run_phenomd=False, **kwargs)
 
-def _bbhx_fd(ifos=None, run_phenomd=True, ref_frame='LISA',
-             sample_points=None, length=1024, direct=False,
-             min_f=False, **params):
+
+def _bbhx_fd(
+    ifos=None,
+    run_phenomd=True,
+    ref_frame='LISA',
+    sample_points=None,
+    length=1024,
+    direct=False,
+    **params
+):
 
     if ifos is None:
         raise Exception("Must define data streams to compute")
@@ -102,6 +130,7 @@ def _bbhx_fd(ifos=None, run_phenomd=True, ref_frame='LISA',
 please set it to be the default value %f, which will put LISA behind \
 the Earth by ~20 degrees." % TIME_OFFSET_20_DEGREES)
     t_obs_start = np.float64(params['t_obs_start']) # in seconds
+    mode_array = np.array(params["mode_array"])
 
     if ref_frame == 'LISA':
         t_ref_lisa = np.float64(params['tc']) + t_offset
@@ -134,35 +163,37 @@ the Earth by ~20 degrees." % TIME_OFFSET_20_DEGREES)
         err_msg = f"Don't recognise reference frame {ref_frame}. "
         err_msg = f"Known frames are 'LISA' and 'SSB'."
 
-    if min_f:
-        if ('f_lower' not in params) or (params['f_lower'] < 0):
-            # the default value of 'f_lower' in PyCBC is -1.
-            tf_track = interpolated_tf(m1, m2)
-            t_max = chirptime(m1=m1, m2=m2, f_lower=1e-4)
-            if t_obs_start > t_max:
-                # Avoid "above the interpolation range" issue.
-                f_min = 1e-4
-            else:
-                f_min = tf_track(t_obs_start) # in Hz
+    # The mode with the largest m will have the highest frequency
+    # since approximately F_lm = m/2 * F_22 and will therefore reach this
+    # frequency at the earliest time
+    max_m_mode = mode_array[:, 1].max()
+    if ('f_lower' not in params) or (params['f_lower'] < 0):
+        # the default value of 'f_lower' in PyCBC is -1.
+        tf_track = interpolated_tf(m1, m2, mode=max_m_mode)
+        t_max = chirptime(m1=m1, m2=m2, f_lower=1e-4, mode=max_m_mode)
+        if t_obs_start > t_max:
+            # Avoid "above the interpolation range" issue.
+            f_min = 1e-4
         else:
-            f_min = np.float64(params['f_lower']) # in Hz
-            tf_track = interpolated_tf(m1, m2)
-            t_max = chirptime(m1=m1, m2=m2, f_lower=1e-4)
-            if t_obs_start > t_max:
-                f_min_tobs = 1e-4
-            else:
-                f_min_tobs = tf_track(t_obs_start) # in Hz
-            if f_min < f_min_tobs:
-                err_msg = f"Input 'f_lower' is lower than the value calculated from 't_obs_start'."
-
-        # We want to cache the waveform generator, but as it takes a mass dependent
-        # start frequency as input this is hard.
-        # To solve this we *round* the *logarithm* of this mass-dependent start
-        # frequency. The factor of 25 ensures reasonable spacing while doing this.
-        # So we round down to the nearest 1/25 of the logarithm of the frequency
-        log_mf_min = int(math.log(f_min*MTSUN_SI*(m1+m2)) * 25)
+            f_min = tf_track(t_obs_start) # in Hz
     else:
-        log_mf_min=None
+        f_min = np.float64(params['f_lower']) # in Hz
+        tf_track = interpolated_tf(m1, m2, mode=max_m_mode)
+        t_max = chirptime(m1=m1, m2=m2, f_lower=1e-4, mode=max_m_mode)
+        if t_obs_start > t_max:
+            f_min_tobs = 1e-4
+        else:
+            f_min_tobs = tf_track(t_obs_start) # in Hz
+        if f_min < f_min_tobs:
+            err_msg = f"Input 'f_lower' is lower than the value calculated from 't_obs_start'."
+            warn(err_msg, RuntimeWarning)
+
+    # We want to cache the waveform generator, but as it takes a mass dependent
+    # start frequency as input this is hard.
+    # To solve this we *round* the *logarithm* of this mass-dependent start
+    # frequency. The factor of 25 ensures reasonable spacing while doing this.
+    # So we round down to the nearest 1/25 of the logarithm of the frequency
+    log_mf_min = int(math.log(f_min*MTSUN_SI*(m1+m2)) * 25)
 
     wave_gen = get_waveform_genner(log_mf_min, run_phenomd=run_phenomd)
 
@@ -194,11 +225,11 @@ the Earth by ~20 degrees." % TIME_OFFSET_20_DEGREES)
 
     # NOTE: This does not allow for the seperation of multiple modes into
     # their own streams. All modes requested are combined into one stream.
-    if direct == 'True' or direct == True:
+    if direct:
         wave = wave_gen(m1, m2, a1, a2,
                         dist, phi_ref, f_ref, inc, lam,
                         beta, psi, t_ref, freqs=freqs,
-                        modes=params['mode_array'], direct=True, fill=fill,
+                        modes=mode_array, direct=True, fill=fill,
                         squeeze=squeeze, t_obs_start=t_obs_start/YRSID_SI,
                         t_obs_end=t_obs_end, compress=compress,
                         shift_t_limits=shift_t_limits)
@@ -207,7 +238,7 @@ the Earth by ~20 degrees." % TIME_OFFSET_20_DEGREES)
         wave = wave_gen(m1, m2, a1, a2,
                         dist, phi_ref, f_ref, inc, lam,
                         beta, psi, t_ref, freqs=freqs,
-                        modes=params['mode_array'], direct=direct, fill=fill,
+                        modes=mode_array, direct=direct, fill=fill,
                         squeeze=squeeze, length=int(length),
                         t_obs_start=t_obs_start/YRSID_SI,
                         t_obs_end=t_obs_end, compress=compress,
