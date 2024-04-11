@@ -94,6 +94,8 @@ def waveform_setup(**kwargs):
         if 'mode_array' not in kwargs:
             kwargs['mode_array'] = [(2, 2), (2, 1), (3, 3), (3, 2), (4, 4), (4, 3)]
         return _bbhx_fd(run_phenomd=False, **kwargs)
+    else:
+        raise ValueError(f"Invalid approximant: {kwargs['approximant']}")
 
 
 def _bbhx_fd(
