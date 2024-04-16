@@ -26,7 +26,7 @@ def cached_arange(start, stop, spacing):
     return np.arange(start, stop, spacing)
 
 
-def chirptime(m1, m2, f_lower, mode=None):
+def chirptime(m1, m2, f_lower, m_mode=None):
     """Compute the chirptime.
 
     Defaults for the (2,2) mode.
@@ -36,9 +36,9 @@ def chirptime(m1, m2, f_lower, mode=None):
     # Find the (2,2) mode duration
     duration = findchirp_chirptime(m1=m1, m2=m2, fLower=f_lower, porder=7)
     # If a mode is specified, convert to that mode
-    if mode is not None:
+    if m_mode is not None:
         # See https://arxiv.org/abs/2005.08830, eqs. 2-3
-        factor = (2 / (mode[1])) ** (-8 / 3)
+        factor = (2 / (m_mode)) ** (-8 / 3)
         duration *= factor
     return duration
 
@@ -69,7 +69,7 @@ def imr_duration(**params):
     return time_length * 1.1
 
 
-def interpolated_tf(m1, m2, mode=None):
+def interpolated_tf(m1, m2, m_mode=None):
     """Interpolate the time frequency-track.
 
     Defaults to the dominant (2,2) mode and uses :code:`chirptime` to compute
@@ -81,15 +81,17 @@ def interpolated_tf(m1, m2, mode=None):
     freq_array = np.logspace(-4, 0, num=10)
     t_array = np.zeros(len(freq_array))
     for i in range(len(freq_array)):
-        t_array[i] = chirptime(m1=m1, m2=m2, f_lower=freq_array[i], mode=mode)
+        t_array[i] = chirptime(m1=m1, m2=m2, f_lower=freq_array[i], m_mode=m_mode)
     tf_track = interp1d(t_array, freq_array)
     return tf_track
 
 
 def waveform_setup(**kwargs):
     if kwargs['approximant'] == "BBHX_PhenomD":
+        if len(kwargs['mode_array']) != 1:
+            raise RuntimeError("BBHX_PhenomD only supports the (2,2) mode!")
         kwargs['mode_array'] = [(2, 2)]
-        return _bbhx_fd(**kwargs)
+        return _bbhx_fd(run_phenomd=True, **kwargs)
     elif kwargs['approximant'] == "BBHX_PhenomHM":
         if 'mode_array' not in kwargs:
             kwargs['mode_array'] = [(2, 2), (2, 1), (3, 3), (3, 2), (4, 4), (4, 3)]
@@ -132,7 +134,7 @@ def _bbhx_fd(
 please set it to be the default value %f, which will put LISA behind \
 the Earth by ~20 degrees." % TIME_OFFSET_20_DEGREES)
     t_obs_start = np.float64(params['t_obs_start']) # in seconds
-    mode_array = np.array(params["mode_array"])
+    mode_array = list(params["mode_array"])
 
     if ref_frame == 'LISA':
         t_ref_lisa = np.float64(params['tc']) + t_offset
@@ -168,11 +170,11 @@ the Earth by ~20 degrees." % TIME_OFFSET_20_DEGREES)
     # The mode with the largest m will have the highest frequency
     # since approximately F_lm = m/2 * F_22 and will therefore reach this
     # frequency at the earliest time
-    max_m_mode = mode_array[:, 1].max()
+    max_m_mode = max([mode[1] for mode in mode_array])
     if ('f_lower' not in params) or (params['f_lower'] < 0):
         # the default value of 'f_lower' in PyCBC is -1.
-        tf_track = interpolated_tf(m1, m2, mode=max_m_mode)
-        t_max = chirptime(m1=m1, m2=m2, f_lower=1e-4, mode=max_m_mode)
+        tf_track = interpolated_tf(m1, m2, m_mode=max_m_mode)
+        t_max = chirptime(m1=m1, m2=m2, f_lower=1e-4, m_mode=max_m_mode)
         if t_obs_start > t_max:
             # Avoid "above the interpolation range" issue.
             f_min = 1e-4
@@ -180,8 +182,8 @@ the Earth by ~20 degrees." % TIME_OFFSET_20_DEGREES)
             f_min = tf_track(t_obs_start) # in Hz
     else:
         f_min = np.float64(params['f_lower']) # in Hz
-        tf_track = interpolated_tf(m1, m2, mode=max_m_mode)
-        t_max = chirptime(m1=m1, m2=m2, f_lower=1e-4, mode=max_m_mode)
+        tf_track = interpolated_tf(m1, m2, m_mode=max_m_mode)
+        t_max = chirptime(m1=m1, m2=m2, f_lower=1e-4, m_mode=max_m_mode)
         if t_obs_start > t_max:
             f_min_tobs = 1e-4
         else:
