@@ -55,7 +55,7 @@ def interpolated_tf(m1, m2):
     tf_track = interp1d(t_array, freq_array)
     return tf_track
 
-def bbhx_fd(ifos=None, run_phenomd=True, tdi='1.5',
+def bbhx_fd(ifos=None, run_phenomd=True, tdi=None,
             ref_frame='LISA', sample_points=None, **params):
 
     if ifos is None:
@@ -223,6 +223,6 @@ def bbhx_fd(ifos=None, run_phenomd=True, tdi='1.5',
     elif str(tdi) == '1.5':
         pass
     else:
-        raise Exception("Only support TDI-1.5 and TDI-2.0 for now.")
+        raise Exception("The TDI version only supports '1.5' and '2.0' for now.")
 
     return output
