@@ -210,7 +210,7 @@ def bbhx_fd(ifos=None, run_phenomd=True, tdi='1.5',
                 output[channel] *= np.exp(2j*np.pi*sample_points*t_offset)
 
     # convert TDI version
-    if tdi == '2.0':
+    if str(tdi) == '2.0':
         from pycbc.psd.analytical_space import omega_length
         if sample_points is None:
             # assume all channels share the same sample_frequencies
@@ -220,7 +220,7 @@ def bbhx_fd(ifos=None, run_phenomd=True, tdi='1.5',
         rescale = 2j*np.sin(2*omega_len)*np.exp(-2j*omega_len)
         for key in output:
             output[key] *= rescale
-    elif tdi == '1.5':
+    elif str(tdi) == '1.5':
         pass
     else:
         raise Exception("Only support TDI-1.5 and TDI-2.0 for now.")
