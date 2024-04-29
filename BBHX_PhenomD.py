@@ -220,9 +220,7 @@ def bbhx_fd(ifos=None, run_phenomd=True, tdi=None,
         rescale = 2j*np.sin(2*omega_len)*np.exp(-2j*omega_len)
         for key in output:
             output[key] *= rescale
-    elif str(tdi) == '1.5':
-        pass
-    else:
+    if str(tdi) not in ['1.5', '2.0']:
         raise ValueError("The TDI version only supports '1.5' and '2.0' for now.")
 
     return output
