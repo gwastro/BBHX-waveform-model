@@ -223,6 +223,6 @@ def bbhx_fd(ifos=None, run_phenomd=True, tdi=None,
     elif str(tdi) == '1.5':
         pass
     else:
-        raise Exception("The TDI version only supports '1.5' and '2.0' for now.")
+        raise ValueError("The TDI version only supports '1.5' and '2.0' for now.")
 
     return output
