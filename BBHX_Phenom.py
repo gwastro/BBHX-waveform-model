@@ -166,14 +166,13 @@ the Earth by ~20 degrees." % TIME_OFFSET_20_DEGREES)
         err_msg = f"Don't recognise reference frame {ref_frame}. "
         err_msg = f"Known frames are 'LISA' and 'SSB'."
 
-    # The mode with the largest m will have the highest frequency
-    # since approximately F_lm = m/2 * F_22 and will therefore reach this
-    # frequency at the earliest time
-    max_m_mode = max([mode[1] for mode in mode_array])
+    # The lowest m mode will have the lowest frequency at a given start time
+    # so we use this to compute the track
+    min_m_mode = max([mode[1] for mode in mode_array])
     if ('f_lower' not in params) or (params['f_lower'] < 0):
         # the default value of 'f_lower' in PyCBC is -1.
-        tf_track = interpolated_tf(m1, m2, m_mode=max_m_mode)
-        t_max = chirptime(m1=m1, m2=m2, f_lower=1e-4, m_mode=max_m_mode)
+        tf_track = interpolated_tf(m1, m2, m_mode=min_m_mode)
+        t_max = chirptime(m1=m1, m2=m2, f_lower=1e-4, m_mode=min_m_mode)
         if t_obs_start > t_max:
             # Avoid "above the interpolation range" issue.
             f_min = 1e-4
@@ -181,8 +180,8 @@ the Earth by ~20 degrees." % TIME_OFFSET_20_DEGREES)
             f_min = tf_track(t_obs_start) # in Hz
     else:
         f_min = np.float64(params['f_lower']) # in Hz
-        tf_track = interpolated_tf(m1, m2, m_mode=max_m_mode)
-        t_max = chirptime(m1=m1, m2=m2, f_lower=1e-4, m_mode=max_m_mode)
+        tf_track = interpolated_tf(m1, m2, m_mode=min_m_mode)
+        t_max = chirptime(m1=m1, m2=m2, f_lower=1e-4, m_mode=min_m_mode)
         if t_obs_start > t_max:
             f_min_tobs = 1e-4
         else:
