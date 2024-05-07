@@ -88,7 +88,7 @@ def interpolated_tf(m1, m2, m_mode=None):
 
 def waveform_setup(**kwargs):
     if kwargs['approximant'] == "BBHX_PhenomD":
-        if len(kwargs['mode_array']) != 1:
+        if kwargs.get('mode_array') is not None  and len(kwargs['mode_array']) != 1:
             raise RuntimeError("BBHX_PhenomD only supports the (2,2) mode!")
         kwargs['mode_array'] = [(2, 2)]
         return _bbhx_fd(run_phenomd=True, **kwargs)
