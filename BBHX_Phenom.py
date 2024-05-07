@@ -80,8 +80,7 @@ def interpolated_tf(m1, m2, m_mode=None):
     # the corresponding `f_min` for `t_obs_start`.
     freq_array = np.logspace(-4, 0, num=10)
     t_array = np.zeros(len(freq_array))
-    for i in range(len(freq_array)):
-        t_array[i] = chirptime(m1=m1, m2=m2, f_lower=freq_array[i], m_mode=m_mode)
+    t_array = chirptime(m1=m1, m2=m2, f_lower=freq_array, m_mode=m_mode)
     tf_track = interp1d(t_array, freq_array)
     return tf_track
 
