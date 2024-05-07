@@ -69,7 +69,7 @@ def imr_duration(**params):
     return time_length * 1.1
 
 
-def interpolated_tf(m1, m2, m_mode=None):
+def interpolated_tf(m1, m2, m_mode=None, num_interp=100):
     """Interpolate the time frequency-track.
 
     Defaults to the dominant (2,2) mode and uses :code:`chirptime` to compute
@@ -78,7 +78,7 @@ def interpolated_tf(m1, m2, m_mode=None):
     # Using findchirp_chirptime in PyCBC to calculate
     # the time-frequency track of dominant mode to get
     # the corresponding `f_min` for `t_obs_start`.
-    freq_array = np.logspace(-4, 0, num=10)
+    freq_array = np.logspace(-4, 0, num=num_interp)
     t_array = np.zeros(len(freq_array))
     t_array = chirptime(m1=m1, m2=m2, f_lower=freq_array, m_mode=m_mode)
     tf_track = interp1d(t_array, freq_array)
@@ -106,6 +106,7 @@ def _bbhx_fd(
     sample_points=None,
     length=1024,
     direct=False,
+    num_interp=100,
     **params
 ):
 
@@ -171,7 +172,9 @@ the Earth by ~20 degrees." % TIME_OFFSET_20_DEGREES)
     min_m_mode = max([mode[1] for mode in mode_array])
     if ('f_lower' not in params) or (params['f_lower'] < 0):
         # the default value of 'f_lower' in PyCBC is -1.
-        tf_track = interpolated_tf(m1, m2, m_mode=min_m_mode)
+        tf_track = interpolated_tf(
+            m1, m2, m_mode=min_m_mode, num_interp=num_interp
+        )
         t_max = chirptime(m1=m1, m2=m2, f_lower=1e-4, m_mode=min_m_mode)
         if t_obs_start > t_max:
             # Avoid "above the interpolation range" issue.
@@ -180,7 +183,9 @@ the Earth by ~20 degrees." % TIME_OFFSET_20_DEGREES)
             f_min = tf_track(t_obs_start) # in Hz
     else:
         f_min = np.float64(params['f_lower']) # in Hz
-        tf_track = interpolated_tf(m1, m2, m_mode=min_m_mode)
+        tf_track = interpolated_tf(
+            m1, m2, m_mode=min_m_mode, num_interp=num_interp
+        )
         t_max = chirptime(m1=m1, m2=m2, f_lower=1e-4, m_mode=min_m_mode)
         if t_obs_start > t_max:
             f_min_tobs = 1e-4
