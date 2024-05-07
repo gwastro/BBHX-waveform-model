@@ -135,6 +135,8 @@ please set it to be the default value %f, which will put LISA behind \
 the Earth by ~20 degrees." % TIME_OFFSET_20_DEGREES)
     t_obs_start = np.float64(params['t_obs_start']) # in seconds
     mode_array = list(params["mode_array"])
+    num_interp = int(num_interp)
+    length = int(length) if length is not None else None
 
     if ref_frame == 'LISA':
         t_ref_lisa = np.float64(params['tc']) + t_offset
@@ -230,26 +232,27 @@ the Earth by ~20 degrees." % TIME_OFFSET_20_DEGREES)
     shift_t_limits = False # Times are relative to merger
     t_obs_end = 0.0 # Generates ringdown as well!
 
-    # NOTE: This does not allow for the seperation of multiple modes into
+    # NOTE: This does not allow for the separation of multiple modes into
     # their own streams. All modes requested are combined into one stream.
-    if direct:
-        wave = wave_gen(m1, m2, a1, a2,
-                        dist, phi_ref, f_ref, inc, lam,
-                        beta, psi, t_ref, freqs=freqs,
-                        modes=mode_array, direct=True, fill=fill,
-                        squeeze=squeeze, t_obs_start=t_obs_start/YRSID_SI,
-                        t_obs_end=t_obs_end, compress=compress,
-                        shift_t_limits=shift_t_limits)
-    else:
-        # Need to give length if direct = False.
-        wave = wave_gen(m1, m2, a1, a2,
-                        dist, phi_ref, f_ref, inc, lam,
-                        beta, psi, t_ref, freqs=freqs,
-                        modes=mode_array, direct=direct, fill=fill,
-                        squeeze=squeeze, length=int(length),
-                        t_obs_start=t_obs_start/YRSID_SI,
-                        t_obs_end=t_obs_end, compress=compress,
-                        shift_t_limits=shift_t_limits)[0]
+    wave = wave_gen(
+        m1, m2, a1, a2,
+        dist, phi_ref, f_ref, inc, lam,
+        beta, psi, t_ref,
+        freqs=freqs,
+        modes=mode_array,
+        direct=direct,
+        fill=fill,
+        squeeze=squeeze,
+        t_obs_start=t_obs_start / YRSID_SI,
+        t_obs_end=t_obs_end,
+        compress=compress,
+        length=length,
+        shift_t_limits=shift_t_limits,
+    )
+    # For some reason, the shape is different depending on if direct is True
+    # or False.
+    if not direct:
+        wave = wave[0]
 
     wanted = {}
 
