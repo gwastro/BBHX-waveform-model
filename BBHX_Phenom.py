@@ -26,6 +26,11 @@ def cached_arange(start, stop, spacing):
     return np.arange(start, stop, spacing)
 
 
+@functools.lru_cache(maxsize=128)
+def cached_freq_logspace(f_lower, num_interp):
+    return np.logspace(math.log10(f_lower), 0, num=num_interp)
+
+
 def chirptime(m1, m2, f_lower, m_mode=None):
     """Compute the chirptime.
 
@@ -69,7 +74,7 @@ def imr_duration(**params):
     return time_length * 1.1
 
 
-def interpolated_tf(m1, m2, m_mode=None, num_interp=100):
+def interpolated_tf(m1, m2, m_mode=None, num_interp=100, f_lower=1e-4):
     """Interpolate the time frequency-track.
 
     Defaults to the dominant (2,2) mode and uses :code:`chirptime` to compute
@@ -78,8 +83,7 @@ def interpolated_tf(m1, m2, m_mode=None, num_interp=100):
     # Using findchirp_chirptime in PyCBC to calculate
     # the time-frequency track of dominant mode to get
     # the corresponding `f_min` for `t_obs_start`.
-    freq_array = np.logspace(-4, 0, num=num_interp)
-    t_array = np.zeros(len(freq_array))
+    freq_array = cached_freq_logspace(f_lower, num_interp)
     t_array = chirptime(m1=m1, m2=m2, f_lower=freq_array, m_mode=m_mode)
     tf_track = interp1d(t_array, freq_array)
     return tf_track
@@ -107,6 +111,7 @@ def _bbhx_fd(
     length=1024,
     direct=False,
     num_interp=100,
+    interp_f_lower=1e-4,
     **params
 ):
 
@@ -137,6 +142,7 @@ the Earth by ~20 degrees." % TIME_OFFSET_20_DEGREES)
     mode_array = list(params["mode_array"])
     num_interp = int(num_interp)
     length = int(length) if length is not None else None
+    interp_f_lower = float(interp_f_lower)
 
     if ref_frame == 'LISA':
         t_ref_lisa = np.float64(params['tc']) + t_offset
@@ -171,27 +177,39 @@ the Earth by ~20 degrees." % TIME_OFFSET_20_DEGREES)
 
     # The lowest m mode will have the lowest frequency at a given start time
     # so we use this to compute the track
-    min_m_mode = max([mode[1] for mode in mode_array])
+    max_m_mode = max([mode[1] for mode in mode_array])
     if ('f_lower' not in params) or (params['f_lower'] < 0):
         # the default value of 'f_lower' in PyCBC is -1.
-        tf_track = interpolated_tf(
-            m1, m2, m_mode=min_m_mode, num_interp=num_interp
+        t_max = chirptime(
+            m1=m1, m2=m2, f_lower=interp_f_lower, m_mode=max_m_mode
         )
-        t_max = chirptime(m1=m1, m2=m2, f_lower=1e-4, m_mode=min_m_mode)
         if t_obs_start > t_max:
             # Avoid "above the interpolation range" issue.
-            f_min = 1e-4
+            f_min = interp_f_lower
         else:
+            tf_track = interpolated_tf(
+                m1,
+                m2,
+                m_mode=max_m_mode,
+                num_interp=num_interp,
+                f_lower=interp_f_lower,
+            )
             f_min = tf_track(t_obs_start) # in Hz
     else:
         f_min = np.float64(params['f_lower']) # in Hz
-        tf_track = interpolated_tf(
-            m1, m2, m_mode=min_m_mode, num_interp=num_interp
+        t_max = chirptime(
+            m1=m1, m2=m2, f_lower=interp_f_lower, m_mode=max_m_mode
         )
-        t_max = chirptime(m1=m1, m2=m2, f_lower=1e-4, m_mode=min_m_mode)
         if t_obs_start > t_max:
-            f_min_tobs = 1e-4
+            f_min_tobs = interp_f_lower
         else:
+            tf_track = interpolated_tf(
+                m1,
+                m2,
+                m_mode=max_m_mode,
+                num_interp=num_interp,
+                f_lower=interp_f_lower,
+            )
             f_min_tobs = tf_track(t_obs_start) # in Hz
         if f_min < f_min_tobs:
             err_msg = f"Input 'f_lower' is lower than the value calculated from 't_obs_start'."
