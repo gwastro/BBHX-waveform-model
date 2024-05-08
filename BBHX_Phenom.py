@@ -205,8 +205,8 @@ the Earth by ~20 degrees." % TIME_OFFSET_20_DEGREES)
         err_msg = f"Don't recognise reference frame {ref_frame}. "
         err_msg = f"Known frames are 'LISA' and 'SSB'."
 
-    # The lowest m mode will have the lowest frequency at a given start time
-    # so we use this to compute the track
+    # We follow the convention used in LAL and set the frequency based on the
+    # highest m mode. This means that lower m modes will start at later times.
     max_m_mode = max([mode[1] for mode in mode_array])
     if ('f_lower' not in params) or (params['f_lower'] < 0):
         # the default value of 'f_lower' in PyCBC is -1.
