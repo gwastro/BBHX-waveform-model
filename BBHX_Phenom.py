@@ -114,6 +114,36 @@ def _bbhx_fd(
     interp_f_lower=1e-4,
     **params
 ):
+    
+    """Function to generate frequency-domain waveforms using BBHx.
+    
+    Parameters
+    ----------
+    ifos : list
+        List of interferometers
+    run_phenomd : bool
+        Flag passed to :code:`bbhx.waveformbuild.BBHWaveformFD` that determines
+        if PhenomD or PhenomHM is used.
+    ref_frame : {'LISA', 'SSB'}
+        Reference frame.
+    samples_points : numpy.ndarray, optional
+        Array of frequencies for computing the waveform
+    length : int
+        Length parameter passed to BBHx. Must be specified if
+        :code:`direct=False`. See BBHx documentation for more details.
+    direct : bool
+        See BBHx documentation.
+    num_interp : int
+        Number of interpolation points used for computing chirp time.
+    interp_f_lower : float
+        Lower frequency cutoff used for interpolation when computing the 
+        chirp time.
+    
+    Returns
+    -------
+    dict
+        A dictionary containing the the waveforms for each interferometer.
+    """
 
     if ifos is None:
         raise Exception("Must define data streams to compute")
