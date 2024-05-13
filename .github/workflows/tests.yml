@@ -31,7 +31,7 @@ jobs:
           gcc_linux-64
           gxx_linux-64
           gsl
-          lapack=3.6.1  # CI fails if this is not pinned
+          lapack=3.6.1
           numpy
           scipy
           cython
