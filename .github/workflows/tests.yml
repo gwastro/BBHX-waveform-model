@@ -31,7 +31,7 @@ jobs:
           gcc_linux-64
           gxx_linux-64
           gsl
-          lapack=3.6.1
+          lapack=3.6.1  # CI fails if this is not pinned
           numpy
           scipy
           cython
@@ -45,6 +45,9 @@ jobs:
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
+        # Need current master branch of pycbc
+        pip install git+https://github.com/gwastro/pycbc.git
+        # Need older version of BBHx
         pip install git+https://github.com/mikekatz04/BBHx.git@dd4c1f5b5a180ca10e699bd0317238be7480f28b
         pip install .
       shell: micromamba-shell {0}
