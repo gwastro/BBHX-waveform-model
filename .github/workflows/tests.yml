@@ -22,17 +22,31 @@ jobs:
 
     steps:
     - uses: actions/checkout@v4
-    - name: Set up Python ${{ matrix.python-version }}
-      uses: actions/setup-python@v4
+    - name: Configure environment with Python ${{ matrix.python-version}}
+      uses: mamba-org/setup-micromamba@v1
       with:
-        python-version: ${{ matrix.python-version }}
-        cache: 'pip'
+        micromamba-version: '1.5.8-0'
+        environment-name: bbhx-test
+        create-args: >-
+          python=${{ matrix.python-version }}
+          gcc_linux-64
+          gxx_linux-64
+          gsl
+          lapack
+          numpy
+          scipy
+          Cython
+          ipython
+          matplotlib
+          pytest
+          pycbc
+        cache-environment: true
+        post-cleanup: 'all'
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
         pip install git+https://github.com/mikekatz04/BBHx.git@dd4c1f5b5a180ca10e699bd0317238be7480f28b
         pip install .
-        pip install pytest
     - name: Test with pytest
       run: |
         python -m pytest -v tests.py
