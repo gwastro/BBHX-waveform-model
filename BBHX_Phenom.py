@@ -12,12 +12,10 @@ from warnings import warn
 def get_waveform_genner(log_mf_min, run_phenomd=True):
     # See below where this function is called for description of how we handle
     # log_mf_min.
-    if log_mf_min is None:
-        wave_gen = BBHWaveformFD(amp_phase_kwargs=dict(run_phenomd=run_phenomd))
-    else:
-        mf_min = math.exp(log_mf_min/25.)
-        wave_gen = BBHWaveformFD(amp_phase_kwargs=dict(run_phenomd=run_phenomd,
-                                                       mf_min=mf_min))
+    mf_min = math.exp(log_mf_min/25.)
+    wave_gen = BBHWaveformFD(
+        amp_phase_kwargs=dict(run_phenomd=run_phenomd, mf_min=mf_min),
+    )
     return wave_gen
 
 
