@@ -34,7 +34,7 @@ jobs:
           lapack
           numpy
           scipy
-          Cython
+          cython
           ipython
           matplotlib
           pytest
