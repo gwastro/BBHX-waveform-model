@@ -32,6 +32,7 @@ jobs:
           gxx_linux-64
           gsl
           lapack=3.6.1
+          lalsuite
           numpy
           scipy
           cython
