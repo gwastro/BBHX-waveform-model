@@ -13,6 +13,11 @@ def ref_frame(request):
     return request.param
 
 
+@pytest.fixture(params=["1.5", "2.0"])
+def tdi(request):
+    return request.param
+
+
 @pytest.fixture()
 def params():
     params = {}
@@ -41,7 +46,6 @@ def params():
     return params
 
 
-@pytest.mark.parametrize("tdi", ["1.5", "2.0"])
 def test_get_fd_det_waveform(params, ref_frame, approximant, tdi):
     params["tdi"] = tdi
     params["ref_frame"] = ref_frame
@@ -51,8 +55,9 @@ def test_get_fd_det_waveform(params, ref_frame, approximant, tdi):
     assert len(wf) == 3
 
 
-def test_get_fd_det_waveform_sequence(params, approximant):
+def test_get_fd_det_waveform_sequence(params, approximant, tdi):
     params["ifos"] = "LISA_A"
+    params["tdi"] = tdi
     params["approximant"] = approximant
     freqs = np.array([1-4, 1e-3, 1e-2])
     wf = get_fd_det_waveform_sequence(sample_points=freqs, **params)
