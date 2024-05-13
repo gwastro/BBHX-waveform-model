@@ -4,7 +4,7 @@ import pytest
 
 
 @pytest.mark.parametrize("ref_frame", ["SSB", "LISA"])
-@pytest.mark.parametrize("tdi", ["1.5", "2.5"])
+@pytest.mark.parametrize("tdi", ["1.5", "2.0"])
 def test_get_fd_det_waveform(tdi, ref_frame):
     params = {}
     params["tdi"] = tdi
