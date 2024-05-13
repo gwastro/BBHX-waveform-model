@@ -2,7 +2,7 @@ import functools
 import math
 import numpy as np
 from scipy.interpolate import interp1d
-from bbhx.utils.constants import MTSUN_SI, YRSID_SI
+from bbhx.utils.constants import MTSUN_SI, YRSID_SI, L_SI
 from bbhx.waveformbuild import BBHWaveformFD
 from pycbc.coordinates import TIME_OFFSET_20_DEGREES, lisa_to_ssb, ssb_to_lisa
 
@@ -214,9 +214,9 @@ def bbhx_fd(ifos=None, run_phenomd=True, tdi=None,
         from pycbc.psd.analytical_space import omega_length
         if sample_points is None:
             # assume all channels share the same sample_frequencies
-            omega_len = omega_length(f=output[channel].sample_frequencies, len_arm=2.5e9)
+            omega_len = omega_length(f=output[channel].sample_frequencies, len_arm=L_SI)
         else:
-            omega_len = omega_length(f=sample_points, len_arm=2.5e9)
+            omega_len = omega_length(f=sample_points, len_arm=L_SI)
         rescale = 2j*np.sin(2*omega_len)*np.exp(-2j*omega_len)
         for key in output:
             output[key] *= rescale
