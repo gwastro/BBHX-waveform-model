@@ -6,7 +6,7 @@ setup.py file for BBHX waveform into pycbc waveform plugin package
 from setuptools import Extension, setup, Command
 from setuptools import find_packages
 
-VERSION = '0.2'
+VERSION = '0.3'
 
 setup (
     name = 'pycbc-bbhx-plugin',

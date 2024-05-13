@@ -4,8 +4,10 @@ import pytest
 
 
 @pytest.mark.parametrize("ref_frame", ["SSB", "LISA"])
-def test_get_fd_det_waveform(ref_frame):
+@pytest.mark.parametrize("tdi", ["1.5", "2.0"])
+def test_get_fd_det_waveform(tdi, ref_frame):
     params = {}
+    params["tdi"] = tdi
     params["ref_frame"] = ref_frame
     params["approximant"] = "BBHX_PhenomD"
     params["coa_phase"] = 0.0
