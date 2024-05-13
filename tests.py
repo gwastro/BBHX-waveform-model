@@ -1,13 +1,24 @@
 import numpy as np
-from pycbc.waveform import get_fd_det_waveform
+from pycbc.waveform import get_fd_det_waveform, get_fd_det_waveform_sequence
 import pytest
 
 
-@pytest.mark.parametrize("ref_frame", ["SSB", "LISA"])
-def test_get_fd_det_waveform(ref_frame):
+@pytest.fixture(params=["BBHX_PhenomD", "BBHX_PhenomHM"])
+def approximant(request):
+    return request.param
+
+
+@pytest.fixture(params=["LISA", "SSB"])
+def ref_frame(request):
+    return request.param
+
+
+@pytest.fixture()
+def params():
     params = {}
-    params["ref_frame"] = ref_frame
-    params["approximant"] = "BBHX_PhenomD"
+    params["approximant"] = "BBHX_PhenomHM"
+    params["ref_frame"] = "LISA"
+    params["ifos"] = ["LISA_A", "LISA_E", "LISA_T"]
     params["coa_phase"] = 0.0
     params["mass1"] = 1e6
     params["mass2"] = 8e5
@@ -26,7 +37,30 @@ def test_get_fd_det_waveform(ref_frame):
     params["eclipticlongitude"] = 0.5
     params["eclipticlatitude"] = 0.23
     params["polarization"] = 0.1
-    wf = get_fd_det_waveform(ifos=["LISA_A", "LISA_E", "LISA_T"], **params)
+    return params
 
+
+def test_get_fd_det_waveform(params, ref_frame, approximant):
+    params["ref_frame"] = ref_frame
+    params["approximant"] = approximant
+    wf = get_fd_det_waveform(**params)
     # Check all 3 ifos are returned
+    assert len(wf) == 3
+
+
+def test_get_fd_det_waveform_sequence(params, approximant):
+    params["ifos"] = "LISA_A"
+    params["approximant"] = approximant
+    freqs = np.array([1-4, 1e-3, 1e-2])
+    wf = get_fd_det_waveform_sequence(sample_points=freqs, **params)
+    # Check all 3 ifos are returned
+    assert len(wf) == 1
+    assert len(wf["LISA_A"]) == len(freqs)
+
+
+@pytest.mark.parametrize("mode_array", [None, [(3, 3)], [(2, 2), (3, 3)]])
+def test_phenomhm_mode_array(params, mode_array):
+    params["approximant"] = "BBHX_PhenomHM"
+    params["mode_array"] = mode_array
+    wf = get_fd_det_waveform(**params)
     assert len(wf) == 3
