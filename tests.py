@@ -17,6 +17,7 @@ def ref_frame(request):
 def params():
     params = {}
     params["approximant"] = "BBHX_PhenomHM"
+    params["tdi"] = 1.5
     params["ref_frame"] = "LISA"
     params["ifos"] = ["LISA_A", "LISA_E", "LISA_T"]
     params["coa_phase"] = 0.0
@@ -40,7 +41,9 @@ def params():
     return params
 
 
-def test_get_fd_det_waveform(params, ref_frame, approximant):
+@pytest.mark.parametrize("tdi", ["1.5", "2.0"])
+def test_get_fd_det_waveform(params, ref_frame, approximant, tdi):
+    params["tdi"] = tdi
     params["ref_frame"] = ref_frame
     params["approximant"] = approximant
     wf = get_fd_det_waveform(**params)

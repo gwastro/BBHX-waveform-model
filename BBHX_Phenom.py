@@ -2,7 +2,7 @@ import functools
 import math
 import numpy as np
 from scipy.interpolate import interp1d
-from bbhx.utils.constants import MTSUN_SI, YRSID_SI
+from bbhx.utils.constants import MTSUN_SI, YRSID_SI, L_SI
 from bbhx.waveformbuild import BBHWaveformFD
 from pycbc.coordinates import TIME_OFFSET_20_DEGREES, lisa_to_ssb, ssb_to_lisa
 from warnings import warn
@@ -105,6 +105,7 @@ def _bbhx_fd(
     ifos=None,
     run_phenomd=True,
     ref_frame='LISA',
+    tdi=None,
     sample_points=None,
     length=1024,
     direct=False,
@@ -122,6 +123,8 @@ def _bbhx_fd(
     run_phenomd : bool
         Flag passed to :code:`bbhx.waveformbuild.BBHWaveformFD` that determines
         if PhenomD or PhenomHM is used.
+    tdi : {'1.5', '2.0}
+        Version of TDI to use.
     ref_frame : {'LISA', 'SSB'}
         Reference frame.
     samples_points : numpy.ndarray, optional
@@ -332,5 +335,19 @@ the Earth by ~20 degrees." % TIME_OFFSET_20_DEGREES)
             if t_offset != 0:
                 # subtract t_offset from FD waveform
                 output[channel] *= np.exp(2j*np.pi*sample_points*t_offset)
+
+    # convert TDI version
+    if str(tdi) == '2.0':
+        from pycbc.psd.analytical_space import omega_length
+        if sample_points is None:
+            # assume all channels share the same sample_frequencies
+            omega_len = omega_length(f=output[channel].sample_frequencies, len_arm=L_SI)
+        else:
+            omega_len = omega_length(f=sample_points, len_arm=L_SI)
+        rescale = 2j*np.sin(2*omega_len)*np.exp(-2j*omega_len)
+        for key in output:
+            output[key] *= rescale
+    if str(tdi) not in ['1.5', '2.0']:
+        raise ValueError("The TDI version only supports '1.5' and '2.0' for now.")
 
     return output
