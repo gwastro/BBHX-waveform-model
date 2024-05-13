@@ -39,6 +39,7 @@ jobs:
           matplotlib
           pytest
           pycbc
+          pip
         cache-environment: true
         post-cleanup: 'all'
     - name: Install dependencies
@@ -46,6 +47,8 @@ jobs:
         python -m pip install --upgrade pip
         pip install git+https://github.com/mikekatz04/BBHx.git@dd4c1f5b5a180ca10e699bd0317238be7480f28b
         pip install .
+      shell: micromamba-shell {0}
     - name: Test with pytest
       run: |
         python -m pytest -v tests.py
+      shell: micromamba-shell {0}
