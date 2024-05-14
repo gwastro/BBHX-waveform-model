@@ -56,10 +56,10 @@ def imr_duration(**params):
                'spin1z':params['spin1z'], 'spin2z':params['spin2z'],
                'f_lower':params['f_lower']}
 
-    if params['approximant'] == 'BBHX_IMRPhenomD':
+    if params['approximant'] == 'BBHX_PhenomD':
         from pycbc.waveform.waveform import imrphenomd_length_in_time
         time_length = np.float64(imrphenomd_length_in_time(**nparams))
-    elif params['approximant'] == 'BBHX_IMRPhenomHM':
+    elif params['approximant'] == 'BBHX_PhenomHM':
         from pycbc.waveform.waveform import imrphenomhm_length_in_time
         time_length = np.float64(imrphenomhm_length_in_time(**nparams))
 
