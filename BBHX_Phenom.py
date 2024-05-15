@@ -55,13 +55,14 @@ def imr_duration(**params):
     nparams = {'mass1':params['mass1'], 'mass2':params['mass2'],
                'spin1z':params['spin1z'], 'spin2z':params['spin2z'],
                'f_lower':params['f_lower']}
-
     if params['approximant'] == 'BBHX_PhenomD':
         from pycbc.waveform.waveform import imrphenomd_length_in_time
         time_length = np.float64(imrphenomd_length_in_time(**nparams))
     elif params['approximant'] == 'BBHX_PhenomHM':
         from pycbc.waveform.waveform import imrphenomhm_length_in_time
         time_length = np.float64(imrphenomhm_length_in_time(**nparams))
+    else:
+        raise ValueError(f"Invalid approximant: {params['approximant']}")
 
     if time_length < 2678400:
         warnings.warn("Waveform duration is too short! Setting it to 1 month (2678400 s).")
