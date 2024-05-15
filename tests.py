@@ -1,5 +1,9 @@
 import numpy as np
-from pycbc.waveform import get_fd_det_waveform, get_fd_det_waveform_sequence
+from pycbc.waveform import (
+    get_fd_det_waveform,
+    get_fd_det_waveform_sequence,
+    get_waveform_filter_length_in_time,
+)
 import pytest
 
 
@@ -72,3 +76,10 @@ def test_phenomhm_mode_array(params, mode_array):
     params["mode_array"] = mode_array
     wf = get_fd_det_waveform(**params)
     assert len(wf) == 3
+
+
+def test_length_in_time(params, approximant):
+    params["approximant"] = approximant
+    # print(params)
+    duration = get_waveform_filter_length_in_time(**params)
+    assert duration > 0
