@@ -29,8 +29,8 @@ setup (
             "BBHX_PhenomHM=BBHX_Phenom:waveform_setup",
         ],
         "pycbc.waveform.length": [
-            "BBHX_PhenomD=BBHX_Phenom:imr_duration",
-            "BBHX_PhenomHM=BBHX_Phenom:imr_duration",
+            "BBHX_PhenomD=BBHX_Phenom:bbhx_phenomd_length_in_time",
+            "BBHX_PhenomHM=BBHX_Phenom:bbhx_phenomhm_length_in_time",
         ]
     },
 

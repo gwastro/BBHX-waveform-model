@@ -46,31 +46,48 @@ def chirptime(m1, m2, f_lower, m_mode=None):
     return duration
 
 
-def imr_duration(**params):
-    # More accurate duration (within LISA frequency band) of the waveform,
-    # including merge, ringdown, and aligned spin effects.
-    # This is used in the time-domain signal injection in PyCBC.
-    import warnings
+def validate_length_in_time(length_in_time, t_obs_start):
+    """Validate the estimate length in time compared to t_obs_start.
 
-    nparams = {'mass1':params['mass1'], 'mass2':params['mass2'],
-               'spin1z':params['spin1z'], 'spin2z':params['spin2z'],
-               'f_lower':params['f_lower']}
-    if params['approximant'] == 'BBHX_PhenomD':
-        from pycbc.waveform.waveform import imrphenomd_length_in_time
-        time_length = np.float64(imrphenomd_length_in_time(**nparams))
-    elif params['approximant'] == 'BBHX_PhenomHM':
-        from pycbc.waveform.waveform import imrphenomhm_length_in_time
-        time_length = np.float64(imrphenomhm_length_in_time(**nparams))
-    else:
-        raise ValueError(f"Invalid approximant: {params['approximant']}")
+    Parameters
+    ----------
+    length_in_time : float
+        Estimated length in time.
+    t_obs_start
+        Observation start time.
 
-    if time_length < 2678400:
-        warnings.warn("Waveform duration is too short! Setting it to 1 month (2678400 s).")
-        time_length = 2678400
-    if time_length >= params['t_obs_start']:
-        warnings.warn("Waveform duration is longer than data length! Setting it to `t_obs_start`.")
-        time_length = params['t_obs_start']
-    return time_length * 1.1
+    Returns
+    -------
+    float
+        Valid length in time.
+    """
+    if length_in_time < 2678400:
+        warn("Waveform duration is too short! Setting it to 1 month (2678400 s).")
+        length_in_time = 2678400
+    if length_in_time >= t_obs_start:
+        warn("Waveform duration is longer than data length! Setting it to `t_obs_start`.")
+        length_in_time = t_obs_start
+    return length_in_time * 1.1
+
+
+def bbhx_phenomd_length_in_time(**params):
+    """Compute the length in for BBHx PhenomD"""
+    from pycbc.waveform.waveform import get_imr_length
+
+    time_length = np.float64(get_imr_length("IMRPhenomD", **params))
+    return validate_length_in_time(time_length, params["t_obs_start"])
+
+
+def bbhx_phenomhm_length_in_time(**params):
+    """Compute the length in for BBHx PhenomHM"""
+    from pycbc.waveform.waveform import get_hm_length_in_time
+
+    # Max m mode is 4 for BBHx PhenomHM, use if the `mode_array` is not
+    # specified.
+    length_in_time = np.float64(
+        get_hm_length_in_time("IMRPhenomD", 4, **params)
+    )
+    return validate_length_in_time(length_in_time, params["t_obs_start"])
 
 
 def interpolated_tf(m1, m2, m_mode=None, num_interp=100, f_lower=1e-4):
