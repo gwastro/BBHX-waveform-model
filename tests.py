@@ -82,6 +82,9 @@ def test_phenomhm_mode_array(params, mode_array):
 def test_cache_generator(params, cache_generator):
     from BBHX_Phenom import cached_get_waveform_genner
 
+    # Clear cache for these tests
+    cached_get_waveform_genner.cache_clear()
+
     params["approximant"] = "BBHX_PhenomD"
     params["cache_generator"] = cache_generator
 
