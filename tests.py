@@ -78,6 +78,28 @@ def test_phenomhm_mode_array(params, mode_array):
     assert len(wf) == 3
 
 
+@pytest.mark.parametrize("cache_generator", [False, True])
+def test_cache_generator(params, cache_generator):
+    from BBHX_Phenom import cached_get_waveform_genner
+
+    params["approximant"] = "BBHX_PhenomD"
+    params["cache_generator"] = cache_generator
+
+    # Build cache if using it
+    get_fd_det_waveform(**params)
+
+    n_calls = 2
+    for _ in range(n_calls):
+        get_fd_det_waveform(**params)
+
+    cache_info = cached_get_waveform_genner.cache_info()
+    if cache_generator:
+        assert cache_info.hits == n_calls
+    else:
+        assert cache_info.hits == 0
+
+
+
 def test_length_in_time(params, approximant):
     params["approximant"] = approximant
     # print(params)
