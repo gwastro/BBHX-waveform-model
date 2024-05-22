@@ -8,7 +8,6 @@ from pycbc.coordinates import TIME_OFFSET_20_DEGREES, lisa_to_ssb, ssb_to_lisa
 from warnings import warn
 
 
-@functools.lru_cache(maxsize=128)
 def get_waveform_genner(log_mf_min, run_phenomd=True):
     # See below where this function is called for description of how we handle
     # log_mf_min.
@@ -17,6 +16,12 @@ def get_waveform_genner(log_mf_min, run_phenomd=True):
         amp_phase_kwargs=dict(run_phenomd=run_phenomd, mf_min=mf_min),
     )
     return wave_gen
+
+
+@functools.lru_cache(maxsize=128)
+def cached_get_waveform_genner(log_mf_fin, run_phenomd=True):
+    """Cached version of get_waveform_genner"""
+    return get_waveform_genner(log_mf_fin, run_phenomd)
 
 
 @functools.lru_cache(maxsize=10)
@@ -129,6 +134,7 @@ def _bbhx_fd(
     direct=False,
     num_interp=100,
     interp_f_lower=1e-4,
+    cache_generator=True,
     **params
 ):
     
@@ -157,6 +163,8 @@ def _bbhx_fd(
     interp_f_lower : float
         Lower frequency cutoff used for interpolation when computing the 
         chirp time.
+    cache_generator : bool
+        If true, the BBHx waveform generator is cached based on 
     
     Returns
     -------
@@ -269,9 +277,18 @@ the Earth by ~20 degrees." % TIME_OFFSET_20_DEGREES)
     # To solve this we *round* the *logarithm* of this mass-dependent start
     # frequency. The factor of 25 ensures reasonable spacing while doing this.
     # So we round down to the nearest 1/25 of the logarithm of the frequency
-    log_mf_min = int(math.log(f_min*MTSUN_SI*(m1+m2)) * 25)
-
-    wave_gen = get_waveform_genner(log_mf_min, run_phenomd=run_phenomd)
+    log_mf_min = math.log(f_min*MTSUN_SI*(m1+m2)) * 25
+    if cache_generator:
+        # Use int to round down
+        wave_gen = cached_get_waveform_genner(
+            int(log_mf_min),
+            run_phenomd=run_phenomd,
+        )
+    else:
+        wave_gen = get_waveform_genner(
+            log_mf_min,
+            run_phenomd=run_phenomd,
+        )
 
     if sample_points is None:
         if 'delta_f' in params and params['delta_f'] > 0:
