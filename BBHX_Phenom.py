@@ -135,9 +135,10 @@ def _bbhx_fd(
     num_interp=100,
     interp_f_lower=1e-4,
     cache_generator=True,
+    disable_fmin_warn=False,
     **params
 ):
-    
+
     """Function to generate frequency-domain waveforms using BBHx.
     
     Parameters
@@ -152,7 +153,7 @@ def _bbhx_fd(
     ref_frame : {'LISA', 'SSB'}
         Reference frame.
     samples_points : numpy.ndarray, optional
-        Array of frequencies for computing the waveform
+        Array of frequencies for computing the waveform.
     length : int
         Length parameter passed to BBHx. Must be specified if
         :code:`direct=False`. See BBHx documentation for more details.
@@ -164,8 +165,10 @@ def _bbhx_fd(
         Lower frequency cutoff used for interpolation when computing the 
         chirp time.
     cache_generator : bool
-        If true, the BBHx waveform generator is cached based on 
-    
+        If true, the BBHx waveform generator is cached based on.
+    disable_fmin_warn : bool
+        If True, then not show warning about fmin, this is useful for SOBHB.
+
     Returns
     -------
     dict
@@ -229,8 +232,8 @@ the Earth by ~20 degrees." % TIME_OFFSET_20_DEGREES)
             t0=0
         )
     else:
-        err_msg = f"Don't recognise reference frame {ref_frame}. "
-        err_msg = f"Known frames are 'LISA' and 'SSB'."
+        err_msg = f"Don't recognise reference frame {ref_frame}. Known frames are 'LISA' and 'SSB'."
+        warn(err_msg, RuntimeWarning)
 
     # We follow the convention used in LAL and set the frequency based on the
     # highest m mode. This means that lower m modes will start at later times.
@@ -254,23 +257,24 @@ the Earth by ~20 degrees." % TIME_OFFSET_20_DEGREES)
             f_min = tf_track(t_obs_start) # in Hz
     else:
         f_min = np.float64(params['f_lower']) # in Hz
-        t_max = chirptime(
-            m1=m1, m2=m2, f_lower=interp_f_lower, m_mode=max_m_mode
-        )
-        if t_obs_start > t_max:
-            f_min_tobs = interp_f_lower
-        else:
-            tf_track = interpolated_tf(
-                m1,
-                m2,
-                m_mode=max_m_mode,
-                num_interp=num_interp,
-                f_lower=interp_f_lower,
+        if not disable_fmin_warn:
+            t_max = chirptime(
+                m1=m1, m2=m2, f_lower=interp_f_lower, m_mode=max_m_mode
             )
-            f_min_tobs = tf_track(t_obs_start) # in Hz
-        if f_min < f_min_tobs:
-            err_msg = f"Input 'f_lower' is lower than the value calculated from 't_obs_start'."
-            warn(err_msg, RuntimeWarning)
+            if t_obs_start > t_max:
+                f_min_tobs = interp_f_lower
+            else:
+                tf_track = interpolated_tf(
+                    m1,
+                    m2,
+                    m_mode=max_m_mode,
+                    num_interp=num_interp,
+                    f_lower=interp_f_lower,
+                )
+                f_min_tobs = tf_track(t_obs_start) # in Hz
+            if f_min < f_min_tobs:
+                err_msg = f"Input 'f_lower' is lower than the value calculated from 't_obs_start'."
+                warn(err_msg, RuntimeWarning)
 
     # We want to cache the waveform generator, but as it takes a mass dependent
     # start frequency as input this is hard.
