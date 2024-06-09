@@ -135,7 +135,6 @@ def _bbhx_fd(
     num_interp=100,
     interp_f_lower=1e-4,
     cache_generator=True,
-    disable_fmin_warn=False,
     **params
 ):
 
@@ -166,8 +165,6 @@ def _bbhx_fd(
         chirp time.
     cache_generator : bool
         If true, the BBHx waveform generator is cached based on.
-    disable_fmin_warn : bool
-        If True, then not show warning about fmin, this is useful for SOBHB.
 
     Returns
     -------
@@ -257,24 +254,23 @@ the Earth by ~20 degrees." % TIME_OFFSET_20_DEGREES)
             f_min = tf_track(t_obs_start) # in Hz
     else:
         f_min = np.float64(params['f_lower']) # in Hz
-        if not disable_fmin_warn:
-            t_max = chirptime(
-                m1=m1, m2=m2, f_lower=interp_f_lower, m_mode=max_m_mode
+        t_max = chirptime(
+            m1=m1, m2=m2, f_lower=interp_f_lower, m_mode=max_m_mode
+        )
+        if t_obs_start > t_max:
+            f_min_tobs = interp_f_lower
+        else:
+            tf_track = interpolated_tf(
+                m1,
+                m2,
+                m_mode=max_m_mode,
+                num_interp=num_interp,
+                f_lower=interp_f_lower,
             )
-            if t_obs_start > t_max:
-                f_min_tobs = interp_f_lower
-            else:
-                tf_track = interpolated_tf(
-                    m1,
-                    m2,
-                    m_mode=max_m_mode,
-                    num_interp=num_interp,
-                    f_lower=interp_f_lower,
-                )
-                f_min_tobs = tf_track(t_obs_start) # in Hz
-            if f_min < f_min_tobs:
-                err_msg = f"Input 'f_lower' is lower than the value calculated from 't_obs_start'."
-                warn(err_msg, RuntimeWarning)
+            f_min_tobs = tf_track(t_obs_start) # in Hz
+        if np.abs(f_min - f_min_tobs) / f_min > 1e-2:
+            err_msg = f"Input 'f_lower' is significantly deviated from the value calculated from 't_obs_start'."
+            warn(err_msg, RuntimeWarning)
 
     # We want to cache the waveform generator, but as it takes a mass dependent
     # start frequency as input this is hard.
