@@ -17,7 +17,7 @@ setup (
     url = 'http://www.pycbc.org/',
     download_url = 'https://github.com/gwastro/BBHX-waveform-model/v%s' % VERSION,
     keywords = ['pycbc', 'signal processing', 'gravitational waves', 'lisa'],
-    install_requires = ['pycbc'],
+    install_requires = [''],
     py_modules = ['BBHX_Phenom'],
     entry_points = {
         "pycbc.waveform.fd_det":[
