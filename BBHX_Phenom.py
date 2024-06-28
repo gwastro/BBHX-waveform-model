@@ -137,7 +137,7 @@ def _bbhx_fd(
     cache_generator=True,
     **params
 ):
-    
+
     """Function to generate frequency-domain waveforms using BBHx.
     
     Parameters
@@ -152,7 +152,7 @@ def _bbhx_fd(
     ref_frame : {'LISA', 'SSB'}
         Reference frame.
     samples_points : numpy.ndarray, optional
-        Array of frequencies for computing the waveform
+        Array of frequencies for computing the waveform.
     length : int
         Length parameter passed to BBHx. Must be specified if
         :code:`direct=False`. See BBHx documentation for more details.
@@ -164,8 +164,8 @@ def _bbhx_fd(
         Lower frequency cutoff used for interpolation when computing the 
         chirp time.
     cache_generator : bool
-        If true, the BBHx waveform generator is cached based on 
-    
+        If true, the BBHx waveform generator is cached based on.
+
     Returns
     -------
     dict
@@ -229,8 +229,8 @@ the Earth by ~20 degrees." % TIME_OFFSET_20_DEGREES)
             t0=0
         )
     else:
-        err_msg = f"Don't recognise reference frame {ref_frame}. "
-        err_msg = f"Known frames are 'LISA' and 'SSB'."
+        err_msg = f"Don't recognise reference frame {ref_frame}. Known frames are 'LISA' and 'SSB'."
+        warn(err_msg, RuntimeWarning)
 
     # We follow the convention used in LAL and set the frequency based on the
     # highest m mode. This means that lower m modes will start at later times.
@@ -268,8 +268,8 @@ the Earth by ~20 degrees." % TIME_OFFSET_20_DEGREES)
                 f_lower=interp_f_lower,
             )
             f_min_tobs = tf_track(t_obs_start) # in Hz
-        if f_min < f_min_tobs:
-            err_msg = f"Input 'f_lower' is lower than the value calculated from 't_obs_start'."
+        if np.abs(f_min - f_min_tobs) / f_min > 1e-2:
+            err_msg = f"Input 'f_lower' is significantly deviated from the value calculated from 't_obs_start'."
             warn(err_msg, RuntimeWarning)
 
     # We want to cache the waveform generator, but as it takes a mass dependent
