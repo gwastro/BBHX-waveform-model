@@ -354,7 +354,7 @@ the Earth by ~20 degrees." % TIME_OFFSET_20_DEGREES)
     # or False.
     if not direct:
         wave = wave[0]
-    
+
     wanted = {}
 
     if 'LISA_A' in ifos:
