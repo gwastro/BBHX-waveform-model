@@ -288,21 +288,23 @@ the Earth by ~20 degrees." % TIME_OFFSET_20_DEGREES)
     # To solve this we *round* the *logarithm* of this mass-dependent start
     # frequency. The factor of 25 ensures reasonable spacing while doing this.
     # So we round down to the nearest 1/25 of the logarithm of the frequency
-    log_mf_min = math.log(f_min*MTSUN_SI*(m1+m2)) * 25
+    # We only do this if `mf_min` is not specified. If it is then we set this
+    # None and can easily cache the generator.
+    if mf_min is None:
+        log_mf_min = math.log(f_min*MTSUN_SI*(m1+m2)) * 25
+        if cache_generator:
+            log_mf_min = int(log_mf_min)
+    else:
+        log_mf_min = None
     if cache_generator:
-        if mf_min is not None:
-            raise RuntimeError(
-                "Cannot use `cache_generator` when `mf_min` is specified"
-            )
-        # Use int to round down
         wave_gen = cached_get_waveform_genner(
-            int(log_mf_min),
-            mf_min=None,
+            log_mf_min=log_mf_min,
+            mf_min=mf_min,
             run_phenomd=run_phenomd,
         )
     else:
         wave_gen = get_waveform_genner(
-            log_mf_min,
+            log_mf_min=log_mf_min,
             mf_min=mf_min,
             run_phenomd=run_phenomd,
         )
