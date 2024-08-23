@@ -140,6 +140,7 @@ def _bbhx_fd(
     interp_f_lower=1e-4,
     cache_generator=True,
     mf_min=None,
+    enable_flower_warn=True,
     **params
 ):
     
@@ -175,6 +176,8 @@ def _bbhx_fd(
     cache_generator : bool
         If true, the BBHx waveform generator is cached based on the computed
         ``mf_min``. Must be ``False`` if ``mf_min`` is specfied.
+    enable_flower_warn: bool
+        If False, it will turn off the warning from `f_lower` calculation.
     
     Returns
     -------
@@ -240,8 +243,8 @@ the Earth by ~20 degrees." % TIME_OFFSET_20_DEGREES)
             t0=0
         )
     else:
-        err_msg = f"Don't recognise reference frame {ref_frame}. "
-        err_msg = f"Known frames are 'LISA' and 'SSB'."
+        err_msg = f"Don't recognise reference frame {ref_frame}. Known frames are 'LISA' and 'SSB'."
+        raise ValueError(err_msg)
 
     # We follow the convention used in LAL and set the frequency based on the
     # highest m mode. This means that lower m modes will start at later times.
@@ -279,7 +282,7 @@ the Earth by ~20 degrees." % TIME_OFFSET_20_DEGREES)
                 f_lower=interp_f_lower,
             )
             f_min_tobs = tf_track(t_obs_start) # in Hz
-        if f_min < f_min_tobs:
+        if enable_flower_warn and f_min < f_min_tobs:
             err_msg = f"Input 'f_lower' is lower than the value calculated from 't_obs_start'."
             warn(err_msg, RuntimeWarning)
 
