@@ -140,7 +140,7 @@ def _bbhx_fd(
     interp_f_lower=1e-4,
     cache_generator=True,
     mf_min=None,
-    enable_flower_warn=False,
+    enable_flower_warn=True,
     **params
 ):
     
