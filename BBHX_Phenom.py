@@ -8,20 +8,24 @@ from pycbc.coordinates import TIME_OFFSET_20_DEGREES, lisa_to_ssb, ssb_to_lisa
 from warnings import warn
 
 
-def get_waveform_genner(log_mf_min, run_phenomd=True):
+def get_waveform_genner(log_mf_min=None, mf_min=None, run_phenomd=True):
     # See below where this function is called for description of how we handle
     # log_mf_min.
-    mf_min = math.exp(log_mf_min/25.)
+    if mf_min is None:
+        mf_min = math.exp(log_mf_min/25.)
     wave_gen = BBHWaveformFD(
-        amp_phase_kwargs=dict(run_phenomd=run_phenomd, mf_min=mf_min),
+        amp_phase_kwargs=dict(
+            run_phenomd=run_phenomd,
+            mf_min=mf_min,
+        ),
     )
     return wave_gen
 
 
 @functools.lru_cache(maxsize=128)
-def cached_get_waveform_genner(log_mf_fin, run_phenomd=True):
+def cached_get_waveform_genner(*args, **kwargs):
     """Cached version of get_waveform_genner"""
-    return get_waveform_genner(log_mf_fin, run_phenomd)
+    return get_waveform_genner(*args, **kwargs)
 
 
 @functools.lru_cache(maxsize=10)
@@ -135,9 +139,11 @@ def _bbhx_fd(
     num_interp=100,
     interp_f_lower=1e-4,
     cache_generator=True,
+    mf_min=None,
+    enable_flower_warn=False,
     **params
 ):
-
+    
     """Function to generate frequency-domain waveforms using BBHx.
     
     Parameters
@@ -152,7 +158,7 @@ def _bbhx_fd(
     ref_frame : {'LISA', 'SSB'}
         Reference frame.
     samples_points : numpy.ndarray, optional
-        Array of frequencies for computing the waveform.
+        Array of frequencies for computing the waveform
     length : int
         Length parameter passed to BBHx. Must be specified if
         :code:`direct=False`. See BBHx documentation for more details.
@@ -163,9 +169,16 @@ def _bbhx_fd(
     interp_f_lower : float
         Lower frequency cutoff used for interpolation when computing the 
         chirp time.
+    mf_min : float, optional
+        Minimum frequency used by BBHx when performing interpolation. If
+        not specified, the value will be set based on the total mass and
+        minimum frequency.
     cache_generator : bool
-        If true, the BBHx waveform generator is cached based on.
-
+        If true, the BBHx waveform generator is cached based on the computed
+        ``mf_min``. Must be ``False`` if ``mf_min`` is specfied.
+    enable_flower_warn: bool
+        If False, it will turn off the warnning from `f_lower` calculation.
+    
     Returns
     -------
     dict
@@ -200,6 +213,7 @@ the Earth by ~20 degrees." % TIME_OFFSET_20_DEGREES)
     num_interp = int(num_interp)
     length = int(length) if length is not None else None
     interp_f_lower = float(interp_f_lower)
+    
 
     if ref_frame == 'LISA':
         t_ref_lisa = np.float64(params['tc']) + t_offset
@@ -229,8 +243,9 @@ the Earth by ~20 degrees." % TIME_OFFSET_20_DEGREES)
             t0=0
         )
     else:
-        err_msg = f"Don't recognise reference frame {ref_frame}. Known frames are 'LISA' and 'SSB'."
-        warn(err_msg, RuntimeWarning)
+        err_msg = f"Don't recognise reference frame {ref_frame}. "
+        err_msg = f"Known frames are 'LISA' and 'SSB'."
+        ValueError(err_msg, RuntimeWarning)
 
     # We follow the convention used in LAL and set the frequency based on the
     # highest m mode. This means that lower m modes will start at later times.
@@ -268,7 +283,7 @@ the Earth by ~20 degrees." % TIME_OFFSET_20_DEGREES)
                 f_lower=interp_f_lower,
             )
             f_min_tobs = tf_track(t_obs_start) # in Hz
-        if np.abs(f_min - f_min_tobs) / f_min > 1e-2:
+        if np.abs(f_min - f_min_tobs) / f_min > 1e-2 and enable_flower_warn:
             err_msg = f"Input 'f_lower' is significantly deviated from the value calculated from 't_obs_start'."
             warn(err_msg, RuntimeWarning)
 
@@ -277,16 +292,24 @@ the Earth by ~20 degrees." % TIME_OFFSET_20_DEGREES)
     # To solve this we *round* the *logarithm* of this mass-dependent start
     # frequency. The factor of 25 ensures reasonable spacing while doing this.
     # So we round down to the nearest 1/25 of the logarithm of the frequency
-    log_mf_min = math.log(f_min*MTSUN_SI*(m1+m2)) * 25
+    # We only do this if `mf_min` is not specified. If it is then we set this
+    # None and can easily cache the generator.
+    if mf_min is None:
+        log_mf_min = math.log(f_min*MTSUN_SI*(m1+m2)) * 25
+        if cache_generator:
+            log_mf_min = int(log_mf_min)
+    else:
+        log_mf_min = None
     if cache_generator:
-        # Use int to round down
         wave_gen = cached_get_waveform_genner(
-            int(log_mf_min),
+            log_mf_min=log_mf_min,
+            mf_min=mf_min,
             run_phenomd=run_phenomd,
         )
     else:
         wave_gen = get_waveform_genner(
-            log_mf_min,
+            log_mf_min=log_mf_min,
+            mf_min=mf_min,
             run_phenomd=run_phenomd,
         )
 
