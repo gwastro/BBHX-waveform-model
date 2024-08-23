@@ -87,6 +87,7 @@ def test_cache_generator(params, cache_generator):
 
     params["approximant"] = "BBHX_PhenomD"
     params["cache_generator"] = cache_generator
+    params["mf_min"] = None
 
     # Build cache if using it
     get_fd_det_waveform(**params)
@@ -101,6 +102,27 @@ def test_cache_generator(params, cache_generator):
     else:
         assert cache_info.hits == 0
 
+def test_cache_generator_mf_min(params):
+    from BBHX_Phenom import cached_get_waveform_genner
+
+    # Clear cache for these tests
+    cached_get_waveform_genner.cache_clear()
+
+    params["approximant"] = "BBHX_PhenomD"
+    params["cache_generator"] = True
+    params["mf_min"] = 1e-4
+
+    masses = [2e6, 3e6]
+
+    # Build cache
+    get_fd_det_waveform(**params)
+
+    for m in masses:
+        params["mass1"] = m
+        get_fd_det_waveform(**params)
+
+    cache_info = cached_get_waveform_genner.cache_info()
+    assert cache_info.hits == len(masses)
 
 
 def test_length_in_time(params, approximant):
